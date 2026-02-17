@@ -1,0 +1,216 @@
+import 'dart:async';
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import '../services/logger_service.dart';
+import '../services/settings_service.dart';
+import '../models/ball.dart';
+import '../models/target.dart';
+
+class GameScreen extends StatefulWidget {
+  const GameScreen({super.key});
+
+  @override
+  State<GameScreen> createState() => _GameScreenState();
+}
+
+class _GameScreenState extends State<GameScreen> {
+  late Ball _ball;
+  List<Target> _targets = [];
+  int _score = 0;
+  int _targetsCollected = 0;
+  bool _isPaused = false;
+  bool _gameOver = false;
+  Timer? _gameTimer;
+  Timer? _physicsTimer;
+  double _screenWidth = 0;
+  double _screenHeight = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    LoggerService.info('Game screen opened');
+    _ball = Ball(x: 200, y: 200);
+    _initializeGame();
+  }
+
+  Future<void> _initializeGame() async {
+    final settings = await SettingsService.getSettings();
+    final gravity = settings['gravity'] ?? 9.8;
+
+    setState(() {
+      _ball = Ball(
+        x: 200,
+        y: 200,
+        gravity: (gravity / 10).clamp(0.3, 1.5),
+      );
+      _score = 0;
+      _targetsCollected = 0;
+      _gameOver = false;
+      _isPaused = false;
+      _targets = [];
+    });
+
+    _startGame();
+  }
+
+  void _startGame() {
+    _gameTimer?.cancel();
+    _physicsTimer?.cancel();
+
+    _gameTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (!_isPaused && !_gameOver && mounted && _screenWidth > 0 && _screenHeight > 0) {
+        setState(() {
+          _targets.add(Target(
+            x: (100 + (timer.tick * 50) % (_screenWidth - 200).clamp(100.0, double.infinity)),
+            y: (100 + (timer.tick * 30) % (_screenHeight - 200).clamp(100.0, double.infinity)),
+          ));
+        });
+      }
+    });
+
+    _physicsTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
+      if (!_isPaused && !_gameOver && mounted) {
+        _updatePhysics();
+      }
+    });
+  }
+
+  void _updatePhysics() {
+    if (_screenWidth == 0 || _screenHeight == 0) return;
+
+    setState(() {
+      _ball.update(_screenWidth, _screenHeight);
+
+      for (var target in _targets) {
+        if (target.checkCollision(_ball.x, _ball.y, _ball.radius)) {
+          target.collected = true;
+          _targetsCollected++;
+          _score += 10;
+          LoggerService.info('Target collected! Score: ' + _score.toString());
+        }
+      }
+
+      _targets.removeWhere((target) => target.collected);
+    });
+  }
+
+  void _pauseGame() {
+    setState(() {
+      _isPaused = !_isPaused;
+    });
+    final status = _isPaused ? 'paused' : 'resumed';
+    LoggerService.info('Game ' + status);
+  }
+
+  void _resetGame() async {
+    _gameTimer?.cancel();
+    _physicsTimer?.cancel();
+    await _initializeGame();
+  }
+
+  @override
+  void dispose() {
+    _gameTimer?.cancel();
+    _physicsTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('РРіСЂР°'),
+        actions: [
+          IconButton(
+            icon: Icon(_isPaused ? Icons.play_arrow : Icons.pause),
+            onPressed: _pauseGame,
+          ),
+        ],
+      ),
+      body: const Center(
+        child: Text(
+          'TEST SCREEN',
+          style: TextStyle(fontSize: 32, color: Colors.black),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildControlButton(IconData icon, VoidCallback onPressed) {
+    return Material(
+      color: Colors.blue,
+      borderRadius: BorderRadius.circular(30),
+      child: InkWell(
+        onTap: _isPaused || _gameOver ? null : onPressed,
+        borderRadius: BorderRadius.circular(30),
+        child: Container(
+          width: 60,
+          height: 60,
+          alignment: Alignment.center,
+          child: Icon(icon, color: Colors.white, size: 30),
+        ),
+      ),
+    );
+  }
+}
+
+class GamePainter extends CustomPainter {
+  final Ball ball;
+  final List<Target> targets;
+
+  GamePainter({
+    required this.ball,
+    required this.targets,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (var target in targets) {
+      if (!target.collected) {
+        final targetPaint = Paint()
+          ..color = Colors.green
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(
+          Offset(target.x, target.y),
+          target.radius,
+          targetPaint,
+        );
+
+        final innerPaint = Paint()
+          ..color = Colors.lightGreen
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(
+          Offset(target.x, target.y),
+          target.radius * 0.6,
+          innerPaint,
+        );
+      }
+    }
+
+    final ballPaint = Paint()
+      ..color = Colors.blue
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(
+      Offset(ball.x, ball.y),
+      ball.radius,
+      ballPaint,
+    );
+
+    final borderPaint = Paint()
+      ..color = Colors.blue[900]!
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    canvas.drawCircle(
+      Offset(ball.x, ball.y),
+      ball.radius,
+      borderPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(GamePainter oldDelegate) {
+    return ball.x != oldDelegate.ball.x ||
+        ball.y != oldDelegate.ball.y ||
+        targets.length != oldDelegate.targets.length;
+  }
+}
