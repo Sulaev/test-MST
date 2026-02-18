@@ -9,6 +9,7 @@ APPS=(
   "education-subjects"
   "time-management"
   "utility-app"
+  "ai-meal-planner"
 )
 
 # Variable to store the selected app
