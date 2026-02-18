@@ -1,6 +1,6 @@
 # Flutter App Pack
 
-В репозитории 6 Flutter-приложений:
+В репозитории 7 Flutter-приложений:
 
 - `ball-physics` - аркада с шариком и разрушаемыми кольцами.
 - `aviation-game` - аркадный полет в стиле tappy-plane.
@@ -8,6 +8,7 @@
 - `education-subjects` - обучающее приложение (математика, физика, химия).
 - `time-management` - задачи, таймер фокуса и планирование.
 - `utility-app` - рабочий набор утилит (tasks/focus/notes/calc).
+- `ai-meal-planner` - планировщик питания с AI-режимом, fallback-режимом, API рецептов и экспортом PDF.
 
 ## Быстрый запуск
 
@@ -17,7 +18,7 @@
 ./run_simple.sh
 ```
 
-Скрипт покажет меню с выбором приложения по номеру `1..6`, затем:
+Скрипт покажет меню с выбором приложения по номеру `1..7`, затем:
 
 1. выполнит `flutter pub get`;
 2. покажет доступные устройства (`flutter devices`);
@@ -32,6 +33,7 @@
 ./run_simple.sh education-subjects
 ./run_simple.sh time-management
 ./run_simple.sh utility-app
+./run_simple.sh ai-meal-planner
 ```
 
 ## Как скрипт ищет Flutter
