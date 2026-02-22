@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.ai_meal_planner"
+    namespace = "com.nicfuno.sonicforgeflow"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -21,13 +21,24 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.ai_meal_planner"
+        applicationId = "com.nicfuno.sonicforgeflow"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        val isReleaseBuild = gradle.startParameter.taskNames.any { taskName ->
+            taskName.contains("release", ignoreCase = true)
+        }
+        val fallbackAdmobAppId = if (isReleaseBuild) "" else "ca-app-pub-3940256099942544~3347511713"
+        val admobAppId: String = (project.findProperty("ADMOB_APP_ID") as String?)
+            ?: System.getenv("ADMOB_APP_ID")
+            ?: fallbackAdmobAppId
+        if (isReleaseBuild && admobAppId.isBlank()) {
+            throw GradleException("ADMOB_APP_ID is required for release builds.")
+        }
+        manifestPlaceholders["admobAppId"] = admobAppId
     }
 
     buildTypes {

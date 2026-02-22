@@ -1,4 +1,5 @@
 import 'package:ai_meal_planner/models/meal_plan.dart';
+import 'package:ai_meal_planner/models/generation_stage.dart';
 import 'package:ai_meal_planner/services/ai_remote_meal_planner_service.dart';
 import 'package:ai_meal_planner/services/free_meal_planner_service.dart';
 import 'package:ai_meal_planner/services/planner_generation_service.dart';
@@ -60,6 +61,35 @@ void main() {
     expect(result.usedFallback, isTrue);
     expect(result.plan.goal, 'weight_loss');
     expect(free.calls, 1);
+  });
+
+  test('emits progress stages for ai generation', () async {
+    final _FakeAiService ai = _FakeAiService();
+    final _FakeFreeService free = _FakeFreeService();
+    final _InMemoryCache cache = _InMemoryCache();
+    final PlannerGenerationService service = PlannerGenerationService(
+      aiService: ai,
+      freeService: free,
+      cacheStore: cache,
+    );
+    final List<GenerationStage> stages = <GenerationStage>[];
+
+    await service.generate(
+      mode: PlannerMode.ai,
+      goal: 'health',
+      dailyCalories: 2100,
+      days: 3,
+      allergies: '',
+      preferences: 'quick',
+      onProgress: (GenerationProgress progress) {
+        stages.add(progress.stage);
+      },
+    );
+
+    expect(stages, contains(GenerationStage.validatingInput));
+    expect(stages, contains(GenerationStage.checkingCache));
+    expect(stages, contains(GenerationStage.requestingAi));
+    expect(stages.last, GenerationStage.completed);
   });
 }
 

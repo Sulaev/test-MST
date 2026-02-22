@@ -3,3 +3,5 @@
 .env.local
 .env.*
 !.env.example
+**/google-services.json
+**/GoogleService-Info.plist

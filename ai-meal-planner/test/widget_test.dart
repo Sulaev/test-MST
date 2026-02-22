@@ -6,15 +6,15 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/material.dart';
 
 import 'package:ai_meal_planner/main.dart';
 
 void main() {
   testWidgets('renders planner shell', (WidgetTester tester) async {
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const MyApp(enableExternalServices: false));
 
     expect(find.text('AI Meal Planner'), findsOneWidget);
-    expect(find.text('Generate'), findsOneWidget);
-    expect(find.text('History'), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
   });
 }

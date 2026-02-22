@@ -1,0 +1,169 @@
+{
+  "@@locale": "ru",
+  "appTitle": "AI Meal Planner",
+  "tabGenerate": "Генерация",
+  "tabHistory": "История",
+  "tabFeed": "Лента",
+  "plannerInputs": "Параметры плана",
+  "goal": "Цель",
+  "aiMode": "AI режим",
+  "fastMode": "Быстрый режим",
+  "aiOnlineModeCurrent": "AI онлайн режим (текущий endpoint)",
+  "deterministicLocalMode": "Локальный детерминированный режим",
+  "aiModeDetails": "Включены retry + timeout. При ошибке AI автоматически включается локальный fallback.",
+  "fastModeDetails": "Без зависимости от AI. Быстрая и стабильная локальная генерация.",
+  "dailyCalories": "Калории в день",
+  "allergies": "Аллергии",
+  "allergiesHint": "например: арахис, лактоза",
+  "preferences": "Предпочтения",
+  "preferencesHint": "например: high-protein, quick meals",
+  "weeklyAdherenceLabel": "Соблюдение плана за неделю: {percent}%",
+  "@weeklyAdherenceLabel": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "daysLabel": "Дней: {days}",
+  "@daysLabel": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "generating": "Генерация...",
+  "generateMealPlan": "Сгенерировать план питания",
+  "exportCurrentPlanPdf": "Экспорт в PDF",
+  "refreshGoalTips": "Обновить советы по цели",
+  "shareToLocalFeed": "Опубликовать",
+  "generationStatus": "Статус генерации",
+  "goalSupport": "Поддержка цели",
+  "secureConfigProvided": "Безопасная конфигурация: {count}/15 ключей",
+  "@secureConfigProvided": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clear": "Очистить",
+  "noSavedPlans": "Сохраненных планов пока нет.",
+  "exportPdf": "Экспорт PDF",
+  "feedEmpty": "Лента пуста. Опубликуйте первый план.",
+  "favorite": "Избранное",
+  "openRecipe": "Открыть рецепт",
+  "shoppingList": "Список покупок:",
+  "tips": "Советы:",
+  "goalKcalPerDay": "Цель: {goal} | {kcal} ккал/день",
+  "@goalKcalPerDay": {
+    "placeholders": {
+      "goal": {},
+      "kcal": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyCaloriesValidationError": "Калории в день должны быть числом от 900 до 5000.",
+  "loadedCachedAiResponse": "Загружен кэшированный AI-ответ для этих параметров.",
+  "aiFallbackUsed": "AI недоступен, использован локальный fallback.",
+  "readyToGenerate": "Готово к генерации.",
+  "checkingInput": "Проверка входных параметров...",
+  "enrichingRecipes": "Обогащаем блюда рецептами...",
+  "savingHistory": "Сохранение плана в историю...",
+  "planReady": "Ваш план готов.",
+  "generationFailed": "Ошибка генерации: {error}",
+  "@generationFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "postedToLocalFeed": "Опубликовано в локальную ленту.",
+  "couldNotOpenRecipeUrl": "Не удалось открыть ссылку на рецепт.",
+  "pdfExportFailed": "Ошибка экспорта PDF: {error}",
+  "@pdfExportFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "waitingInput": "Ожидание параметров",
+  "stepValidation": "Шаг 1/6: Валидация",
+  "stepCache": "Шаг 2/6: Проверка кэша",
+  "stepAiRequest": "Шаг 3/6: Запрос к AI",
+  "stepLocalFallback": "Шаг 4/6: Локальная генерация/fallback",
+  "stepEnrich": "Шаг 5/6: Обогащение рецептами",
+  "stepSave": "Шаг 6/6: Сохранение результата",
+  "done": "Готово",
+  "failed": "Ошибка",
+  "goalWeightLoss": "Снижение веса",
+  "goalMuscleGain": "Набор мышечной массы",
+  "goalHealth": "Здоровье",
+  "goalMaintenanceRecomp": "Поддержание / рекомпозиция",
+  "allFilter": "Все"
+  ,
+  "purchaseSuccess": "Покупка завершена.",
+  "restoreSuccess": "Покупки восстановлены.",
+  "subscriptionTitle": "Подписка",
+  "subscriptionApiKeyMissing": "APPHUD_API_KEY не задан. Передайте его через --dart-define для включения подписок.",
+  "subscriptionActive": "Подписка активна",
+  "subscriptionInactive": "Активной подписки нет",
+  "restorePurchases": "Восстановить покупки",
+  "subscriptionNoProducts": "Для текущего placement/paywall продукты не найдены.",
+  "buy": "Купить",
+  "trackingTitle": "Трекинг и атрибуция",
+  "attStatus": "Статус ATT",
+  "appsflyerStarted": "AppsFlyer SDK запущен",
+  "appsflyerNotStarted": "AppsFlyer SDK не запущен",
+  "appsflyerUid": "AppsFlyer UID",
+  "conversionDataReceived": "Данные конверсии получены"
+  ,
+  "freepikToolsTitle": "Инструменты Freepik",
+  "freepikImageUrl": "Ссылка на изображение",
+  "freepikRemoveBackground": "Удалить фон",
+  "freepikSegment": "Сегментировать объект",
+  "freepikReady": "Обработанное изображение готово",
+  "freepikEnterImageUrl": "Сначала введите ссылку на изображение.",
+  "kcalUnit": "ккал",
+  "profileTitle": "Профиль",
+  "profileGender": "Пол",
+  "profileGenderMale": "Мужской",
+  "profileGenderFemale": "Женский",
+  "profileGenderOther": "Другое",
+  "profileWeight": "Вес",
+  "profileHeight": "Рост",
+  "profileKg": "кг",
+  "profileCm": "см",
+  "profileGoal": "Цель",
+  "profileLanguage": "Язык",
+  "profileLanguageSystem": "Системный",
+  "languageEnglish": "Английский",
+  "languageRussian": "Русский",
+  "profileSave": "Сохранить",
+  "profileCancel": "Отмена",
+  "achievementsTitle": "Достижения",
+  "achFirstPlanTitle": "Первый рацион",
+  "achFirstPlanSubtitle": "Создайте свой первый план питания.",
+  "ach3PlansTitle": "Создано 3 плана",
+  "ach3PlansSubtitle": "Сгенерируйте 3 плана питания.",
+  "ach5PlansTitle": "Создано 5 планов",
+  "ach5PlansSubtitle": "Сгенерируйте 5 планов питания.",
+  "ach7PlansTitle": "Создано 7 планов",
+  "ach7PlansSubtitle": "Сгенерируйте 7 планов питания.",
+  "achShareFeedTitle": "Опубликовано в ленте",
+  "achShareFeedSubtitle": "Поделитесь интересным планом в ленту.",
+  "achFavoriteTitle": "Куратор ленты",
+  "achFavoriteSubtitle": "Добавьте хотя бы один пост в избранное.",
+  "achCopyPlanTitle": "Сохранено из ленты",
+  "achCopyPlanSubtitle": "Скопируйте план из ленты в историю.",
+  "achExportPdfTitle": "Экспорт в PDF",
+  "achExportPdfSubtitle": "Экспортируйте план в PDF.",
+  "achOpenRecipeTitle": "Открыл рецепт",
+  "achOpenRecipeSubtitle": "Откройте ссылку на рецепт.",
+  "feedOpenPlan": "Открыть план",
+  "feedCopyPlan": "Копировать",
+  "feedCopiedToHistory": "Скопировано в историю.",
+  "feedPlanUnavailable": "В этом посте нет полного плана.",
+  "feedFollowPlan": "Следовать",
+  "feedFollowingNow": "План добавлен. Можно начинать следовать."
+}

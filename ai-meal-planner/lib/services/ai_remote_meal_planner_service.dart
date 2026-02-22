@@ -10,6 +10,55 @@ class AiRemoteMealPlannerService {
 
   final http.Client _client;
 
+  Future<List<String>> generateGoalSupportTips({
+    required String goal,
+    required String preferences,
+  }) async {
+    final String prompt = '''
+You are a practical nutrition coach.
+Return ONLY JSON object with concise actionable tips.
+Goal: $goal
+Preferences: ${preferences.isEmpty ? "none" : preferences}
+
+Schema:
+{
+  "tips": ["string", "string", "string"]
+}
+''';
+    final Map<String, dynamic> body = <String, dynamic>{
+      'model': 'openai-fast',
+      'temperature': 0,
+      'messages': <Map<String, String>>[
+        <String, String>{
+          'role': 'system',
+          'content': 'Always output valid JSON object only without markdown.',
+        },
+        <String, String>{'role': 'user', 'content': prompt},
+      ],
+      'response_format': <String, dynamic>{'type': 'json_object'},
+    };
+
+    final Map<String, dynamic> payload = await _postWithRetry(body);
+    final String? content = (((payload['choices'] as List<dynamic>?)?.firstOrNull
+                as Map<String, dynamic>?)?['message']
+            as Map<String, dynamic>?)?['content']
+        ?.toString();
+    if (content == null || content.isEmpty) {
+      throw const AiPlannerException('AI returned empty coaching content.');
+    }
+    final String jsonText = _extractJson(content);
+    final Map<String, dynamic> map = jsonDecode(jsonText) as Map<String, dynamic>;
+    final List<String> tips = ((map['tips'] as List<dynamic>?) ?? <dynamic>[])
+        .map((dynamic e) => e.toString().trim())
+        .where((String e) => e.isNotEmpty)
+        .take(5)
+        .toList();
+    if (tips.isEmpty) {
+      throw const AiPlannerException('AI coaching response is empty.');
+    }
+    return tips;
+  }
+
   Future<MealPlan> generatePlan({
     required String goal,
     required int dailyCalories,

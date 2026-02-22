@@ -1,4 +1,5 @@
 import '../models/meal_plan.dart';
+import '../models/generation_stage.dart';
 import 'ai_remote_meal_planner_service.dart';
 import 'free_meal_planner_service.dart';
 
@@ -47,8 +48,26 @@ class PlannerGenerationService {
     required int days,
     required String allergies,
     required String preferences,
+    void Function(GenerationProgress progress)? onProgress,
   }) async {
+    _emit(
+      onProgress,
+      const GenerationProgress(
+        stage: GenerationStage.validatingInput,
+        message: 'Checking input parameters...',
+        percent: 0.08,
+      ),
+    );
+
     if (mode == PlannerMode.deterministic) {
+      _emit(
+        onProgress,
+        const GenerationProgress(
+          stage: GenerationStage.generatingLocal,
+          message: 'Generating a local plan...',
+          percent: 0.35,
+        ),
+      );
       final MealPlan plan = await _freeService.generatePlan(
         goal: goal,
         dailyCalories: dailyCalories,
@@ -56,9 +75,25 @@ class PlannerGenerationService {
         allergies: allergies,
         preferences: preferences,
       );
+      _emit(
+        onProgress,
+        const GenerationProgress(
+          stage: GenerationStage.completed,
+          message: 'Plan generated successfully.',
+          percent: 1,
+        ),
+      );
       return PlannerGenerateResult(plan: plan, fromCache: false, usedFallback: false);
     }
 
+    _emit(
+      onProgress,
+      const GenerationProgress(
+        stage: GenerationStage.checkingCache,
+        message: 'Checking cached AI response...',
+        percent: 0.2,
+      ),
+    );
     final String cacheKey = _buildCacheKey(
       goal: goal,
       dailyCalories: dailyCalories,
@@ -68,10 +103,26 @@ class PlannerGenerationService {
     );
     final MealPlan? cached = await _cacheStore.readCachedPlan(cacheKey);
     if (cached != null) {
+      _emit(
+        onProgress,
+        const GenerationProgress(
+          stage: GenerationStage.completed,
+          message: 'Loaded plan from cache.',
+          percent: 1,
+        ),
+      );
       return PlannerGenerateResult(plan: cached, fromCache: true, usedFallback: false);
     }
 
     try {
+      _emit(
+        onProgress,
+        const GenerationProgress(
+          stage: GenerationStage.requestingAi,
+          message: 'Requesting AI plan...',
+          percent: 0.45,
+        ),
+      );
       final MealPlan plan = await _aiService.generatePlan(
         goal: goal,
         dailyCalories: dailyCalories,
@@ -80,8 +131,24 @@ class PlannerGenerationService {
         preferences: preferences,
       );
       await _cacheStore.saveCachedPlan(key: cacheKey, plan: plan);
+      _emit(
+        onProgress,
+        const GenerationProgress(
+          stage: GenerationStage.completed,
+          message: 'AI plan generated successfully.',
+          percent: 1,
+        ),
+      );
       return PlannerGenerateResult(plan: plan, fromCache: false, usedFallback: false);
     } catch (_) {
+      _emit(
+        onProgress,
+        const GenerationProgress(
+          stage: GenerationStage.generatingLocal,
+          message: 'AI unavailable. Switching to local fallback...',
+          percent: 0.62,
+        ),
+      );
       final MealPlan fallback = await _freeService.generatePlan(
         goal: goal,
         dailyCalories: dailyCalories,
@@ -89,7 +156,24 @@ class PlannerGenerationService {
         allergies: allergies,
         preferences: preferences,
       );
+      _emit(
+        onProgress,
+        const GenerationProgress(
+          stage: GenerationStage.completed,
+          message: 'Fallback plan generated successfully.',
+          percent: 1,
+        ),
+      );
       return PlannerGenerateResult(plan: fallback, fromCache: false, usedFallback: true);
+    }
+  }
+
+  void _emit(
+    void Function(GenerationProgress progress)? onProgress,
+    GenerationProgress progress,
+  ) {
+    if (onProgress != null) {
+      onProgress(progress);
     }
   }
 

@@ -1,0 +1,169 @@
+{
+  "@@locale": "en",
+  "appTitle": "AI Meal Planner",
+  "tabGenerate": "Generate",
+  "tabHistory": "History",
+  "tabFeed": "Feed",
+  "plannerInputs": "Planner Inputs",
+  "goal": "Goal",
+  "aiMode": "AI mode",
+  "fastMode": "Fast mode",
+  "aiOnlineModeCurrent": "AI online mode (current endpoint)",
+  "deterministicLocalMode": "Deterministic local mode",
+  "aiModeDetails": "Retry + timeout handling enabled. On failure auto-fallback to local planner.",
+  "fastModeDetails": "No AI dependency. Fast and stable local generation.",
+  "dailyCalories": "Daily Calories",
+  "allergies": "Allergies",
+  "allergiesHint": "e.g. peanuts, lactose",
+  "preferences": "Preferences",
+  "preferencesHint": "e.g. high-protein, quick meals",
+  "weeklyAdherenceLabel": "Weekly plan adherence: {percent}%",
+  "@weeklyAdherenceLabel": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "daysLabel": "Days: {days}",
+  "@daysLabel": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "generating": "Generating...",
+  "generateMealPlan": "Generate Meal Plan",
+  "exportCurrentPlanPdf": "Export Current Plan to PDF",
+  "refreshGoalTips": "Refresh Goal Support Tips",
+  "shareToLocalFeed": "Share to Local Feed",
+  "generationStatus": "Generation Status",
+  "goalSupport": "Goal Support",
+  "secureConfigProvided": "Secure config provided: {count}/15 keys",
+  "@secureConfigProvided": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clear": "Clear",
+  "noSavedPlans": "No saved meal plans yet.",
+  "exportPdf": "Export PDF",
+  "feedEmpty": "Feed is empty. Share your first meal plan.",
+  "favorite": "Favorite",
+  "openRecipe": "Open recipe",
+  "shoppingList": "Shopping list:",
+  "tips": "Tips:",
+  "goalKcalPerDay": "Goal: {goal} | {kcal} kcal/day",
+  "@goalKcalPerDay": {
+    "placeholders": {
+      "goal": {},
+      "kcal": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyCaloriesValidationError": "Daily calories must be a number between 900 and 5000.",
+  "loadedCachedAiResponse": "Loaded cached AI response for same parameters.",
+  "aiFallbackUsed": "AI failed; used deterministic fallback.",
+  "readyToGenerate": "Ready to generate.",
+  "checkingInput": "Checking input parameters...",
+  "enrichingRecipes": "Enriching meals with recipes...",
+  "savingHistory": "Saving plan to history...",
+  "planReady": "Your plan is ready.",
+  "generationFailed": "Generation failed: {error}",
+  "@generationFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "postedToLocalFeed": "Posted to local feed.",
+  "couldNotOpenRecipeUrl": "Could not open recipe URL.",
+  "pdfExportFailed": "PDF export failed: {error}",
+  "@pdfExportFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "waitingInput": "Waiting for your input",
+  "stepValidation": "Step 1/6: Validation",
+  "stepCache": "Step 2/6: Cache check",
+  "stepAiRequest": "Step 3/6: AI request",
+  "stepLocalFallback": "Step 4/6: Local generation/fallback",
+  "stepEnrich": "Step 5/6: Recipe enrichment",
+  "stepSave": "Step 6/6: Save result",
+  "done": "Done",
+  "failed": "Failed",
+  "goalWeightLoss": "Weight loss",
+  "goalMuscleGain": "Muscle gain",
+  "goalHealth": "Health",
+  "goalMaintenanceRecomp": "Maintenance / Recomp",
+  "allFilter": "All"
+  ,
+  "purchaseSuccess": "Purchase completed.",
+  "restoreSuccess": "Purchases restored.",
+  "subscriptionTitle": "Subscription",
+  "subscriptionApiKeyMissing": "APPHUD_API_KEY is not set. Add it via --dart-define to enable subscriptions.",
+  "subscriptionActive": "Subscription active",
+  "subscriptionInactive": "No active subscription",
+  "restorePurchases": "Restore purchases",
+  "subscriptionNoProducts": "No products found for current placement/paywall.",
+  "buy": "Buy",
+  "trackingTitle": "Tracking & Attribution",
+  "attStatus": "ATT status",
+  "appsflyerStarted": "AppsFlyer SDK started",
+  "appsflyerNotStarted": "AppsFlyer SDK not started",
+  "appsflyerUid": "AppsFlyer UID",
+  "conversionDataReceived": "Conversion data received"
+  ,
+  "freepikToolsTitle": "Freepik Image Tools",
+  "freepikImageUrl": "Image URL",
+  "freepikRemoveBackground": "Remove background",
+  "freepikSegment": "Segment object",
+  "freepikReady": "Processed image is ready",
+  "freepikEnterImageUrl": "Enter an image URL first.",
+  "kcalUnit": "kcal",
+  "profileTitle": "Profile",
+  "profileGender": "Gender",
+  "profileGenderMale": "Male",
+  "profileGenderFemale": "Female",
+  "profileGenderOther": "Other",
+  "profileWeight": "Weight",
+  "profileHeight": "Height",
+  "profileKg": "kg",
+  "profileCm": "cm",
+  "profileGoal": "Goal",
+  "profileLanguage": "Language",
+  "profileLanguageSystem": "System",
+  "languageEnglish": "English",
+  "languageRussian": "Russian",
+  "profileSave": "Save",
+  "profileCancel": "Cancel",
+  "achievementsTitle": "Achievements",
+  "achFirstPlanTitle": "First meal plan",
+  "achFirstPlanSubtitle": "Create your first plan.",
+  "ach3PlansTitle": "3 plans created",
+  "ach3PlansSubtitle": "Generate 3 meal plans.",
+  "ach5PlansTitle": "5 plans created",
+  "ach5PlansSubtitle": "Generate 5 meal plans.",
+  "ach7PlansTitle": "7 plans created",
+  "ach7PlansSubtitle": "Generate 7 meal plans.",
+  "achShareFeedTitle": "Shared to feed",
+  "achShareFeedSubtitle": "Post an interesting plan to the feed.",
+  "achFavoriteTitle": "Favorite curator",
+  "achFavoriteSubtitle": "Mark at least one feed post as favorite.",
+  "achCopyPlanTitle": "Saved from feed",
+  "achCopyPlanSubtitle": "Copy a plan from the feed to your history.",
+  "achExportPdfTitle": "PDF exporter",
+  "achExportPdfSubtitle": "Export a plan to PDF.",
+  "achOpenRecipeTitle": "Recipe explorer",
+  "achOpenRecipeSubtitle": "Open a recipe link.",
+  "feedOpenPlan": "Open plan",
+  "feedCopyPlan": "Copy",
+  "feedCopiedToHistory": "Copied to your history.",
+  "feedPlanUnavailable": "This post does not contain a full plan.",
+  "feedFollowPlan": "Follow",
+  "feedFollowingNow": "Plan added. You can follow it now."
+}
