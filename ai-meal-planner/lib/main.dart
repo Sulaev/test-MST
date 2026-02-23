@@ -8,6 +8,8 @@ import 'l10n/app_localizations.dart';
 import 'package:apphud/models/apphud_models/apphud_product.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 import 'config/app_config.dart';
 import 'models/generation_stage.dart';
 import 'models/feed_post.dart';
@@ -26,33 +28,38 @@ import 'services/pdf_export_service.dart';
 import 'services/planner_generation_service.dart';
 import 'services/recipe_lookup_service.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {
+    // .env может отсутствовать (например, не добавлен в assets) — работаем только с dart-define
+  }
+  final AppConfig appConfig = AppConfig.fromEnvironmentWithDotenv();
   const bool enableExternalServices =
       bool.fromEnvironment('ENABLE_EXTERNAL_SERVICES', defaultValue: true);
   if (kDebugMode) {
-    const String apphudKey = String.fromEnvironment('APPHUD_API_KEY', defaultValue: '');
-    const String appsflyerKey = String.fromEnvironment('APPSFLYER_DEV_KEY', defaultValue: '');
-    const String metricaKey = String.fromEnvironment('APPMETRICA_API_KEY', defaultValue: '');
-    const String admobAppId = String.fromEnvironment('ADMOB_APP_ID', defaultValue: '');
     debugPrint(
-      'dart-defines: '
+      'config: '
       'ENABLE_EXTERNAL_SERVICES=$enableExternalServices, '
-      'APPHUD_API_KEY=${apphudKey.isNotEmpty} len=${apphudKey.length}, '
-      'APPSFLYER_DEV_KEY=${appsflyerKey.isNotEmpty} len=${appsflyerKey.length}, '
-      'APPMETRICA_API_KEY=${metricaKey.isNotEmpty} len=${metricaKey.length}, '
-      'ADMOB_APP_ID=${admobAppId.isNotEmpty} len=${admobAppId.length}',
+      'APPHUD_API_KEY len=${appConfig.apphudApiKey.length}, '
+      'APPSFLYER_DEV_KEY len=${appConfig.appsflyerDevKey.length}, '
+      'APPMETRICA_API_KEY len=${appConfig.appMetricaApiKey.length}, '
+      'ADMOB_APP_ID len=${appConfig.admobAppId.length}',
     );
   }
-  runApp(MyApp(enableExternalServices: enableExternalServices));
+  runApp(MyApp(enableExternalServices: enableExternalServices, appConfig: appConfig));
 }
 
 class MyApp extends StatefulWidget {
   const MyApp({
     super.key,
     this.enableExternalServices = true,
+    required this.appConfig,
   });
 
   final bool enableExternalServices;
+  final AppConfig appConfig;
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -100,6 +107,7 @@ class _MyAppState extends State<MyApp> {
       ),
       home: MealPlannerHomePage(
         enableExternalServices: widget.enableExternalServices,
+        appConfig: widget.appConfig,
         onLocaleChanged: _setLocale,
         currentLocale: _locale,
       ),
@@ -111,11 +119,13 @@ class MealPlannerHomePage extends StatefulWidget {
   const MealPlannerHomePage({
     super.key,
     this.enableExternalServices = true,
+    required this.appConfig,
     this.onLocaleChanged,
     this.currentLocale,
   });
 
   final bool enableExternalServices;
+  final AppConfig appConfig;
   final ValueChanged<Locale?>? onLocaleChanged;
   final Locale? currentLocale;
 
@@ -153,7 +163,7 @@ class _MealPlannerHomePageState extends State<MealPlannerHomePage> {
   final TextEditingController _preferencesController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _heightController = TextEditingController();
-  final AppConfig _appConfig = AppConfig.fromEnvironment();
+  AppConfig get _appConfig => widget.appConfig;
 
   PlannerMode _mode = PlannerMode.ai;
   String _selectedGoal = _goals.first;
@@ -835,6 +845,7 @@ class _MealPlannerHomePageState extends State<MealPlannerHomePage> {
           appsflyerStateListenable: _appsflyerService.state,
           attStatus: _attStatus,
           achievements: _buildAchievements(l10n),
+          appConfig: _appConfig,
           onRefreshExternalServices: () async {
             await _initExternalServices();
           },
@@ -1095,31 +1106,51 @@ class _MealPlannerHomePageState extends State<MealPlannerHomePage> {
                   shape: const RoundedRectangleBorder(side: BorderSide(color: Colors.transparent)),
                   collapsedShape: const RoundedRectangleBorder(side: BorderSide(color: Colors.transparent)),
                   title: Text(l10n.plannerInputs, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  childrenPadding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
                   children: <Widget>[
-                  DropdownButtonFormField<String>(
-                    key: ValueKey<String>(_selectedGoal),
-                    initialValue: _selectedGoal,
-                    isExpanded: true,
-                    items: _goals
-                        .map((String goal) =>
-                            DropdownMenuItem<String>(
-                              value: goal,
-                              child: Text(
-                                _goalLabel(goal, l10n),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ))
-                        .toList(),
-                    onChanged: (String? value) {
-                      if (value == null) {
-                        return;
-                      }
-                      setState(() {
-                        _selectedGoal = value;
-                      });
-                    },
-                    decoration: InputDecoration(labelText: l10n.goal, border: const OutlineInputBorder()),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        l10n.goal,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: Theme.of(context).textTheme.bodyLarge?.color ?? const Color(0xFF1A1A1A),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        key: ValueKey<String>(_selectedGoal),
+                        initialValue: _selectedGoal,
+                        isExpanded: true,
+                        items: _goals
+                            .map((String goal) =>
+                                DropdownMenuItem<String>(
+                                  value: goal,
+                                  child: Text(
+                                    _goalLabel(goal, l10n),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ))
+                            .toList(),
+                        onChanged: (String? value) {
+                          if (value == null) {
+                            return;
+                          }
+                          setState(() {
+                            _selectedGoal = value;
+                          });
+                        },
+                        decoration: InputDecoration(
+                          border: const OutlineInputBorder(),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          filled: true,
+                          fillColor: Theme.of(context).colorScheme.surface,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 10),
                   SegmentedButton<PlannerMode>(

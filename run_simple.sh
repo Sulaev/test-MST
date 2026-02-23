@@ -79,7 +79,8 @@ maybe_debug_env() {
   echo "-----------------------------------------"
 }
 
-REMAINING_ARGS=()
+# Имя с подчёркиванием, чтобы .env при load_env_file не затирал переменную
+_REM_ARGS=()
 parse_env_args() {
   # Supports:
   #   ./run_simple.sh --env /path/to/.env
@@ -117,7 +118,7 @@ parse_env_args() {
         ;;
     esac
   done
-  REMAINING_ARGS=("$@")
+  _REM_ARGS=("$@")
 }
 
 parse_env_args "$@"
@@ -263,7 +264,8 @@ run_flutter_in_dir() {
 run_ai_meal_planner() {
   local app_dir="$1"
   shift || true
-  local extra_args=("$@")
+  # Имя с подчёркиванием, чтобы .env при load_env_file не затирал массив
+  local _run_extra_args=("$@")
 
   # Allow app-specific overrides when a .env sits inside the app folder.
   load_env_file "$app_dir/.env"
@@ -341,7 +343,7 @@ run_ai_meal_planner() {
     --dart-define=FREEPIK_API_KEY="$freepik_api_key" \
     --dart-define=ENABLE_FREEPIK_TOOLS="$enable_freepik_tools" \
     --dart-define=ENABLE_ADS="$enable_ads" \
-    "${extra_args[@]}"
+    ${_run_extra_args[@]+"${_run_extra_args[@]}"}
 }
 
 main() {
@@ -369,10 +371,10 @@ main() {
 
   echo "[3/3] Running app..."
   if [[ "$app" == "ai-meal-planner" ]]; then
-    run_ai_meal_planner "$app_dir" "${flutter_extra_args[@]}"
+    run_ai_meal_planner "$app_dir" ${flutter_extra_args[@]+"${flutter_extra_args[@]}"}
   else
-    run_flutter_in_dir "$app_dir" run "${flutter_extra_args[@]}"
+    run_flutter_in_dir "$app_dir" run ${flutter_extra_args[@]+"${flutter_extra_args[@]}"}
   fi
 }
 
-main "${REMAINING_ARGS[@]}"
+main "${_REM_ARGS[@]+"${_REM_ARGS[@]}"}"

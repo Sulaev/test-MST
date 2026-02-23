@@ -2,6 +2,7 @@ import 'package:apphud/models/apphud_models/apphud_product.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../config/app_config.dart';
 import '../l10n/app_localizations.dart';
 import '../services/apphud_service.dart';
 import '../services/appsflyer_service.dart';
@@ -39,8 +40,12 @@ class ProfilePage extends StatefulWidget {
     required this.appsflyerStateListenable,
     required this.attStatus,
     required this.achievements,
+    this.appConfig,
     this.onRefreshExternalServices,
   });
+
+  /// Конфиг приложения (для отображения в отладке и проверки ключей).
+  final AppConfig? appConfig;
 
   final String initialGender;
   final String initialGoal;
@@ -86,10 +91,8 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
-    const String apphudKey = String.fromEnvironment('APPHUD_API_KEY', defaultValue: '');
-    const String appsflyerKey = String.fromEnvironment('APPSFLYER_DEV_KEY', defaultValue: '');
-    const bool enableExternalServices =
-        bool.fromEnvironment('ENABLE_EXTERNAL_SERVICES', defaultValue: true);
+    final String apphudKey = widget.appConfig?.apphudApiKey ??
+        const String.fromEnvironment('APPHUD_API_KEY', defaultValue: '');
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.profileTitle),
@@ -224,16 +227,6 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 18),
             _SectionTitle(l10n.subscriptionTitle),
             const SizedBox(height: 8),
-            if (kDebugMode)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  'debug: ENABLE_EXTERNAL_SERVICES=$enableExternalServices, '
-                  'APPHUD_API_KEY len=${apphudKey.length}, '
-                  'APPSFLYER_DEV_KEY len=${appsflyerKey.length}',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
             ValueListenableBuilder<ApphudState>(
               valueListenable: widget.apphudStateListenable,
               builder: (BuildContext context, ApphudState apphudState, Widget? child) {
@@ -381,6 +374,17 @@ class _SubscriptionCard extends StatelessWidget {
   final Future<void> Function(ApphudProduct product) onPurchase;
   final Future<void> Function() onRestore;
 
+  List<String> _benefitsForProduct(AppLocalizations l10n, String productId) {
+    final String id = productId.toLowerCase();
+    if (id.contains('weekly') || id.contains('week')) {
+      return l10n.subscriptionWeeklyBenefits.split('\n');
+    }
+    if (id.contains('monthly') || id.contains('month')) {
+      return l10n.subscriptionMonthlyBenefits.split('\n');
+    }
+    return l10n.subscriptionDefaultBenefits.split('\n');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -392,58 +396,68 @@ class _SubscriptionCard extends StatelessWidget {
             style: Theme.of(context).textTheme.bodySmall,
           )
         else ...<Widget>[
+          // Статус и «Восстановить» в два ряда — без overflow
           Row(
             children: <Widget>[
               Icon(
                 state.hasActiveSubscription ? Icons.verified : Icons.lock_open_outlined,
-                color: state.hasActiveSubscription ? Colors.green : Colors.orange,
+                color: state.hasActiveSubscription ? const Color(0xFF2AA845) : const Color(0xFFE67E22),
+                size: 22,
               ),
               const SizedBox(width: 8),
-              Text(
-                state.hasActiveSubscription ? l10n.subscriptionActive : l10n.subscriptionInactive,
-              ),
-              const Spacer(),
-              TextButton(
-                onPressed: state.isLoading ? null : onRestore,
-                child: Text(l10n.restorePurchases),
+              Expanded(
+                child: Text(
+                  state.hasActiveSubscription ? l10n.subscriptionActive : l10n.subscriptionInactive,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: state.isLoading ? null : onRestore,
+              icon: const Icon(Icons.restore, size: 20),
+              label: Text(l10n.restorePurchases, style: const TextStyle(fontWeight: FontWeight.w600)),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                side: const BorderSide(color: Color(0xFF62BFA8)),
+                foregroundColor: const Color(0xFF62BFA8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
           if (state.lastError != null && state.lastError!.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 4, bottom: 8),
+              padding: const EdgeInsets.only(top: 6, bottom: 10),
               child: Text(
                 state.lastError!,
-                style: const TextStyle(color: Color(0xFFC24D5A)),
+                style: const TextStyle(color: Color(0xFFC24D5A), fontSize: 13),
               ),
             ),
           if (state.products.isEmpty)
-            Text(l10n.subscriptionNoProducts)
+            Text(l10n.subscriptionNoProducts, style: Theme.of(context).textTheme.bodySmall)
           else
             ...state.products.map(
-              (ApphudProduct product) {
-                final String? priceLabel = _priceLabel(product);
-                final String subtitle = priceLabel == null
-                    ? product.productId
-                    : '${product.productId} • $priceLabel';
-                return ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(
-                    product.name?.trim().isNotEmpty == true ? product.name! : product.productId,
-                  ),
-                  subtitle: Text(subtitle),
-                  trailing: FilledButton(
-                    onPressed: state.isLoading ? null : () => onPurchase(product),
-                    child: Text(l10n.buy),
-                  ),
-                );
-              },
+              (ApphudProduct product) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _SubscriptionPlanCard(
+                  l10n: l10n,
+                  product: product,
+                  priceLabel: _priceLabel(product),
+                  benefits: _benefitsForProduct(l10n, product.productId),
+                  isLoading: state.isLoading,
+                  onPurchase: () => onPurchase(product),
+                ),
+              ),
             ),
         ],
       ],
     );
   }
+
   String? _priceLabel(ApphudProduct product) {
     final skProduct = product.skProduct;
     if (skProduct != null) {
@@ -461,6 +475,137 @@ class _SubscriptionCard extends StatelessWidget {
       return offers.first.pricingPhases.first.formattedPrice;
     }
     return null;
+  }
+}
+
+class _SubscriptionPlanCard extends StatelessWidget {
+  const _SubscriptionPlanCard({
+    required this.l10n,
+    required this.product,
+    required this.priceLabel,
+    required this.benefits,
+    required this.isLoading,
+    required this.onPurchase,
+  });
+
+  final AppLocalizations l10n;
+  final ApphudProduct product;
+  final String? priceLabel;
+  final List<String> benefits;
+  final bool isLoading;
+  final VoidCallback onPurchase;
+
+  @override
+  Widget build(BuildContext context) {
+    final String title = product.name?.trim().isNotEmpty == true
+        ? product.name!
+        : product.productId;
+    final bool isMonthly = product.productId.toLowerCase().contains('month');
+    final Color accent = isMonthly ? const Color(0xFF62BFA8) : const Color(0xFF5DADE2);
+    final Color bgLight = isMonthly ? const Color(0xFFE8F8F5) : const Color(0xFFEBF5FB);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bgLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accent.withValues(alpha: 0.4), width: 1.5),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: accent.withValues(alpha: 0.12),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    isMonthly ? Icons.calendar_month : Icons.date_range,
+                    color: accent,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (priceLabel != null && priceLabel!.isNotEmpty)
+                        Text(
+                          priceLabel!,
+                          style: TextStyle(
+                            color: accent,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (benefits.isNotEmpty) ...<Widget>[
+              const SizedBox(height: 12),
+              ...benefits.map(
+                (String benefit) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Icon(Icons.check_circle_outline, size: 18, color: accent),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          benefit,
+                          style: const TextStyle(fontSize: 13),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: isLoading ? null : onPurchase,
+                style: FilledButton.styleFrom(
+                  backgroundColor: accent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(l10n.buy, style: const TextStyle(fontWeight: FontWeight.w600)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

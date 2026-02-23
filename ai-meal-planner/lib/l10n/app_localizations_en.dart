@@ -234,6 +234,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get buy => 'Buy';
 
   @override
+  String get subscriptionWeeklyBenefits => 'Meal plans for 7 days\nPersonal recommendations\nPDF export';
+
+  @override
+  String get subscriptionMonthlyBenefits => 'Everything in Weekly\nPlans for the whole month\nPriority support';
+
+  @override
+  String get subscriptionDefaultBenefits => 'Personal meal plans\nCalorie & macro guidance\nRecipe export';
+
+  @override
   String get trackingTitle => 'Tracking & Attribution';
 
   @override
