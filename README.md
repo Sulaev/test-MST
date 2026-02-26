@@ -1,6 +1,6 @@
 # Flutter App Pack
 
-В репозитории 7 Flutter-приложений:
+В репозитории 8 Flutter-приложений:
 
 - `ball-physics` - аркада с шариком и разрушаемыми кольцами.
 - `aviation-game` - аркадный полет в стиле tappy-plane.
@@ -9,6 +9,7 @@
 - `time-management` - задачи, таймер фокуса и планирование.
 - `utility-app` - рабочий набор утилит (tasks/focus/notes/calc).
 - `ai-meal-planner` - планировщик питания с AI-режимом, fallback-режимом, API рецептов и экспортом PDF.
+- `ai-meditation-guide` - приложение для медитаций с AI‑генерацией сценариев, дыхательными практиками и ежедневной рутиной.
 
 ## Быстрый запуск
 
@@ -34,7 +35,21 @@
 ./run_simple.sh time-management
 ./run_simple.sh utility-app
 ./run_simple.sh ai-meal-planner
+./run_simple.sh ai-meditation-guide
 ```
+
+### Особенности `ai-meditation-guide`
+
+- **Назначение**: генерация медитаций через GenAPI, дыхательные упражнения и «ежедневная рутина».
+- **Запуск**: `./run_simple.sh ai-meditation-guide` (или через VS Code Task «Run ai-meditation-guide (run_simple.sh)`).
+- **Секреты**: перед запуском создайте корневой `.env` с ключами:
+  - `GENAPI_TOKEN` — токен для `https://gen-api.ru`;
+  - `APPHUD_API_KEY` и продукты/пейволл для подписок;
+  - при наличии — остальные ключи (AdMob, AppsFlyer, AppMetrica).
+- Скрипт сам:
+  - загружает `.env`;
+  - пробрасывает значения в приложение через `--dart-define`;
+  - копирует `.env` в `ai_meditation_guide/assets/.env`, чтобы приложение могло читать его через `flutter_dotenv` на симуляторе/устройстве.
 
 ## Как скрипт ищет Flutter
 

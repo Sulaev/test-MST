@@ -1,0 +1,39 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run ai-meditation-guide (run_simple.sh)",
+      "type": "shell",
+      "command": "./run_simple.sh",
+      "args": ["ai-meditation-guide"],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {}
+      },
+      "group": {
+        "kind": "run",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true
+      }
+    },
+    {
+      "label": "Run ai-meal-planner (run_simple.sh)",
+      "type": "shell",
+      "command": "./run_simple.sh",
+      "args": ["ai-meal-planner"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "run",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true
+      }
+    }
+  ]
+}

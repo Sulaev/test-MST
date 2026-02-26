@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Запуск приложения с .env и --dart-define (AppHud, GenAPI, AdMob и т.д.).
+# Терминал: ./run_simple.sh [ai-meditation-guide|ai-meal-planner|...]
+# IDE: Terminal → Run Task → "Run ai-meditation-guide (run_simple.sh)"
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -8,18 +11,26 @@ load_env_file() {
   if [[ ! -f "$env_file" ]]; then
     return 0
   fi
-  set -a
-  # Support UTF-8 BOM and CRLF line endings (common on Windows).
-  # shellcheck disable=SC1090
-  . <(
-    sed -e $'1s/^\xEF\xBB\xBF//' -e 's/\r$//' "$env_file" \
-      | sed -E \
-          -e 's/^[[:space:]]*export[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*=/export \1=/' \
-          -e 's/^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*=/\1=/' \
-          -e 's/^[[:space:]]+//' \
-          -e 's/[[:space:]]+$//'
-  )
-  set +a
+  local line key value
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line//$'\r'/}"
+    line="${line#$'\xEF\xBB\xBF'}"
+    [[ "$line" =~ ^[[:space:]]*# ]] && continue
+    [[ "$line" =~ ^[[:space:]]*$ ]] && continue
+    if [[ "$line" =~ ^[[:space:]]*export[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
+      key="${BASH_REMATCH[1]}"
+      value="${BASH_REMATCH[2]}"
+      printf -v "$key" '%s' "$value"
+      export "$key"
+      continue
+    fi
+    if [[ "$line" =~ ^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
+      key="${BASH_REMATCH[1]}"
+      value="${BASH_REMATCH[2]}"
+      printf -v "$key" '%s' "$value"
+      export "$key"
+    fi
+  done < "$env_file"
 }
 
 DEBUG_ENV="${DEBUG_ENV:-false}"
@@ -422,96 +433,7 @@ run_ai_meal_planner() {
     --dart-define=GEN_API_TEXT_MODEL="$gen_api_text_model" \
     --dart-define=GEN_API_IMAGE_MODEL="$gen_api_image_model" \
     --dart-define=ENABLE_ADS="$enable_ads" \
-<<<<<<< HEAD
-    "${extra_args[@]}" 2>&1 | tee "$run_log"
-  local run_exit="${PIPESTATUS[0]}"
-  set -e
-  if [[ "$run_exit" -eq 0 ]]; then
-    rm -f "$run_log" || true
-    return 0
-  fi
-
-  # One retry if the APK looks corrupted (usually caused by interrupted build).
-  if ! is_zip_magic "$(android_apk_path "$app_dir")"; then
-    echo
-    echo "-----------------------------------------"
-    echo " Flutter run failed and APK looks corrupted."
-    echo " Retrying after clean..."
-    echo "-----------------------------------------"
-    maybe_fix_broken_android_apk "$app_dir"
-    run_flutter_in_dir "$app_dir" run \
-      --dart-define=APPHUD_API_KEY="$apphud_api_key" \
-      --dart-define=APPHUD_PLACEMENT_ID="$apphud_placement_id" \
-      --dart-define=APPHUD_PAYWALL_ID="$apphud_paywall_id" \
-      --dart-define=APPHUD_PRODUCT_WEEKLY="$apphud_weekly" \
-      --dart-define=APPHUD_PRODUCT_MONTHLY="$apphud_monthly" \
-      --dart-define=APPSFLYER_DEV_KEY="$appsflyer_dev_key" \
-      --dart-define=APPSFLYER_APPLE_APP_ID="$appsflyer_apple_id" \
-      --dart-define=APPSFLYER_ATT_WAIT_SECONDS="$appsflyer_att_wait" \
-      --dart-define=APPMETRICA_API_KEY="$appmetrica_api_key" \
-      --dart-define=ENABLE_EXTERNAL_SERVICES="$enable_external_services" \
-      --dart-define=ADMOB_APP_ID="$admob_app_id" \
-      --dart-define=ADMOB_BANNER_AD_UNIT_ID="$admob_banner" \
-      --dart-define=ADMOB_INTERSTITIAL_AD_UNIT_ID="$admob_interstitial" \
-      --dart-define=ADMOB_REWARDED_AD_UNIT_ID="$admob_rewarded" \
-      --dart-define=ADMOB_REWARDED_INTERSTITIAL_AD_UNIT_ID="$admob_rewarded_interstitial" \
-      --dart-define=ADMOB_APP_OPEN_AD_UNIT_ID="$admob_app_open" \
-      --dart-define=ADMOB_NATIVE_AD_UNIT_ID="$admob_native" \
-      --dart-define=ENABLE_FIREBASE_ANALYTICS="$enable_firebase_analytics" \
-      --dart-define=FIREBASE_ANDROID_API_KEY="$firebase_android_api_key" \
-      --dart-define=FIREBASE_ANDROID_APP_ID="$firebase_android_app_id" \
-      --dart-define=FIREBASE_ANDROID_PROJECT_ID="$firebase_android_project_id" \
-      --dart-define=FIREBASE_ANDROID_SENDER_ID="$firebase_android_sender_id" \
-      --dart-define=FIREBASE_ANDROID_STORAGE_BUCKET="$firebase_android_storage_bucket" \
-      --dart-define=FIREBASE_IOS_API_KEY="$firebase_ios_api_key" \
-      --dart-define=FIREBASE_IOS_APP_ID="$firebase_ios_app_id" \
-      --dart-define=FIREBASE_IOS_PROJECT_ID="$firebase_ios_project_id" \
-      --dart-define=FIREBASE_IOS_SENDER_ID="$firebase_ios_sender_id" \
-      --dart-define=FIREBASE_IOS_BUNDLE_ID="$firebase_ios_bundle_id" \
-      --dart-define=FIREBASE_IOS_STORAGE_BUCKET="$firebase_ios_storage_bucket" \
-      --dart-define=GEN_API_KEY="$gen_api_key" \
-      --dart-define=GENAPI_TOKEN="${GENAPI_TOKEN:-}" \
-      --dart-define=GEN_API_BASE_URL="$gen_api_base_url" \
-      --dart-define=GEN_API_NETWORKS_PATH="$gen_api_networks_path" \
-      --dart-define=GEN_API_REQUEST_PATH_TEMPLATE="$gen_api_request_path_template" \
-      --dart-define=GEN_API_REQUEST_ALT_PATH_TEMPLATE="$gen_api_request_alt_path_template" \
-      --dart-define=GEN_API_TEXT_NETWORK="$gen_api_text_network" \
-      --dart-define=GEN_API_ENABLE_TEXT="$gen_api_enable_text" \
-      --dart-define=GEN_API_IMAGE_NETWORK="$gen_api_image_network" \
-      --dart-define=GEN_API_ENABLE_IMAGE="$gen_api_enable_image" \
-      --dart-define=GEN_API_TTS_NETWORK="$gen_api_tts_network" \
-      --dart-define=GEN_API_TTS_MODEL="$gen_api_tts_model" \
-      --dart-define=GEN_API_TTS_VOICE_SOFT="$gen_api_tts_voice_soft" \
-      --dart-define=GEN_API_TTS_VOICE_NEUTRAL="$gen_api_tts_voice_neutral" \
-      --dart-define=GEN_API_TTS_VOICE_DEEP="$gen_api_tts_voice_deep" \
-      --dart-define=GEN_API_CHAT_PATH="$gen_api_chat_path" \
-      --dart-define=GEN_API_IMAGE_PATH="$gen_api_image_path" \
-      --dart-define=GEN_API_TEXT_MODEL="$gen_api_text_model" \
-      --dart-define=GEN_API_IMAGE_MODEL="$gen_api_image_model" \
-      --dart-define=ENABLE_ADS="$enable_ads" \
-      "${extra_args[@]}"
-  fi
-
-  # Helpful guidance for the common WSL-on-/mnt/c symlink failure.
-  if grep -q "Building with plugins requires symlink support" "$run_log" 2>/dev/null; then
-    echo
-    echo "-----------------------------------------"
-    echo " Symlink support error detected."
-    echo
-    echo " Fix options:"
-    echo "  - Enable Windows Developer Mode:"
-    echo "      start ms-settings:developers"
-    echo "  - OR move the project to the WSL ext4 filesystem (e.g. under /home/<user>/...)"
-    echo "    and use Linux Flutter there (avoids /mnt/c symlink limitations)."
-    echo "-----------------------------------------"
-    echo
-  fi
-
-  rm -f "$run_log" || true
-  return "$run_exit"
-=======
     ${_run_extra_args[@]+"${_run_extra_args[@]}"}
->>>>>>> 4304633d3f4450f40982fff1f8fb10653988b9e9
 }
 
 main() {
@@ -542,14 +464,15 @@ main() {
   echo "[2/3] Checking devices..."
   run_flutter_in_dir "$app_dir" devices || true
 
+  # Copy root .env into app assets so dotenv can load GENAPI_TOKEN etc. at runtime (e.g. on simulator).
+  if [[ "$app" == "ai-meal-planner" || "$app" == "ai-meditation-guide" ]] && [[ -f "$ROOT_DIR/.env" ]]; then
+    mkdir -p "$app_dir/assets"
+    cp "$ROOT_DIR/.env" "$app_dir/assets/.env"
+  fi
+
   echo "[3/3] Running app..."
-<<<<<<< HEAD
   if [[ "$app" == "ai-meal-planner" || "$app" == "ai-meditation-guide" ]]; then
-    run_ai_meal_planner "$app_dir" "${flutter_extra_args[@]}"
-=======
-  if [[ "$app" == "ai-meal-planner" ]]; then
     run_ai_meal_planner "$app_dir" ${flutter_extra_args[@]+"${flutter_extra_args[@]}"}
->>>>>>> 4304633d3f4450f40982fff1f8fb10653988b9e9
   else
     run_flutter_in_dir "$app_dir" run ${flutter_extra_args[@]+"${flutter_extra_args[@]}"}
   fi
