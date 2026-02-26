@@ -521,6 +521,10 @@ abstract class AppLocalizations {
   /// **'Buy'**
   String get buy;
 
+  String get subscriptionWeeklyBenefits;
+  String get subscriptionMonthlyBenefits;
+  String get subscriptionDefaultBenefits;
+
   /// No description provided for @trackingTitle.
   ///
   /// In en, this message translates to:

@@ -234,6 +234,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get buy => 'Купить';
 
   @override
+  String get subscriptionWeeklyBenefits => 'Планы питания на 7 дней\nПерсональные рекомендации\nЭкспорт в PDF';
+
+  @override
+  String get subscriptionMonthlyBenefits => 'Всё из еженедельного\nПланы на весь месяц\nПриоритетная поддержка';
+
+  @override
+  String get subscriptionDefaultBenefits => 'Персональные планы питания\nРекомендации по КБЖУ\nЭкспорт рецептов';
+
+  @override
   String get trackingTitle => 'Трекинг и атрибуция';
 
   @override

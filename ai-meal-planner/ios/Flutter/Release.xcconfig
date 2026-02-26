@@ -1,4 +1,4 @@
+#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
 #include "Generated.xcconfig"
-// For release builds, set ADMOB_APP_ID via build settings or use test ID for now
-// Test AdMob App ID for iOS (replace with real ID for production)
-ADMOB_APP_ID=ca-app-pub-3940256099942544~1458002511
+// AdMob: тестовый App ID для iOS (для release подставьте свой ID через Xcode scheme или .xcconfig)
+ADMOB_APP_ID = ca-app-pub-3940256099942544~1458002511
