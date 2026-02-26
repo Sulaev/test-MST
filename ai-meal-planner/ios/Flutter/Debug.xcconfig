@@ -1,1 +1,3 @@
 #include "Generated.xcconfig"
+// Test AdMob App ID for iOS (for development)
+ADMOB_APP_ID=ca-app-pub-3940256099942544~1458002511

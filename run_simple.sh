@@ -75,6 +75,8 @@ maybe_debug_env() {
   echo " APPSFLYER_DEV_KEY: $(env_is_set "${APPSFLYER_DEV_KEY-}" && echo set || echo missing) (len=$(env_len "${APPSFLYER_DEV_KEY-}"), file_len=$(file_value_len "$env_file" "APPSFLYER_DEV_KEY"))"
   echo " APPMETRICA_API_KEY: $(env_is_set "${APPMETRICA_API_KEY-}" && echo set || echo missing) (len=$(env_len "${APPMETRICA_API_KEY-}"), file_len=$(file_value_len "$env_file" "APPMETRICA_API_KEY"))"
   echo " ADMOB_APP_ID: $(env_is_set "${ADMOB_APP_ID-}" && echo set || echo missing) (len=$(env_len "${ADMOB_APP_ID-}"), file_len=$(file_value_len "$env_file" "ADMOB_APP_ID"))"
+  echo " GENAPI_TOKEN: $(env_is_set "${GENAPI_TOKEN-}" && echo set || echo missing) (len=$(env_len "${GENAPI_TOKEN-}"), file_len=$(file_value_len "$env_file" "GENAPI_TOKEN"))"
+  echo " GEN_API_KEY: $(env_is_set "${GEN_API_KEY-}" && echo set || echo missing) (len=$(env_len "${GEN_API_KEY-}"), file_len=$(file_value_len "$env_file" "GEN_API_KEY"))"
   echo " ENABLE_EXTERNAL_SERVICES: ${ENABLE_EXTERNAL_SERVICES-<unset>}"
   echo "-----------------------------------------"
 }
@@ -143,6 +145,7 @@ APPS=(
   "time-management"
   "utility-app"
   "ai-meal-planner"
+  "ai-meditation-guide"
 )
 
 # Variable to store the selected app
@@ -260,6 +263,40 @@ run_flutter_in_dir() {
   exit 1
 }
 
+android_apk_path() {
+  local app_dir="$1"
+  echo "$app_dir/build/app/outputs/flutter-apk/app-debug.apk"
+}
+
+is_zip_magic() {
+  # APK is a zip; should start with "PK" (0x50 0x4b).
+  local file_path="$1"
+  if [[ ! -f "$file_path" ]]; then
+    return 1
+  fi
+  local magic
+  magic="$(head -c 2 "$file_path" 2>/dev/null | od -An -t x1 | tr -d ' \n' || true)"
+  [[ "$magic" == "504b" ]]
+}
+
+maybe_fix_broken_android_apk() {
+  local app_dir="$1"
+  local apk
+  apk="$(android_apk_path "$app_dir")"
+  if [[ -f "$apk" ]] && ! is_zip_magic "$apk"; then
+    echo
+    echo "-----------------------------------------"
+    echo " Detected broken APK (not a ZIP): $apk"
+    echo " Cleaning build artifacts..."
+    echo "-----------------------------------------"
+    rm -f "$apk" || true
+    rm -rf "$app_dir/build" || true
+    run_flutter_in_dir "$app_dir" clean || true
+    echo "Done."
+    echo
+  fi
+}
+
 run_ai_meal_planner() {
   local app_dir="$1"
   shift || true
@@ -282,8 +319,24 @@ run_ai_meal_planner() {
 
   local appmetrica_api_key="${APPMETRICA_API_KEY:-}"
 
-  local freepik_api_key="${FREEPIK_API_KEY:-}"
-  local enable_freepik_tools="${ENABLE_FREEPIK_TOOLS:-false}"
+  local gen_api_key="${GEN_API_KEY:-${GENAPI_TOKEN:-}}"
+  local gen_api_base_url="${GEN_API_BASE_URL:-https://api.gen-api.ru}"
+  local gen_api_networks_path="${GEN_API_NETWORKS_PATH:-/api/v1/networks}"
+  local gen_api_request_path_template="${GEN_API_REQUEST_PATH_TEMPLATE:-/api/v1/request/{id}}"
+  local gen_api_request_alt_path_template="${GEN_API_REQUEST_ALT_PATH_TEMPLATE:-/api/v1/requests/{id}}"
+  local gen_api_text_network="${GEN_API_TEXT_NETWORK:-gpt-4-1}"
+  local gen_api_enable_text="${GEN_API_ENABLE_TEXT:-true}"
+  local gen_api_image_network="${GEN_API_IMAGE_NETWORK:-flux-2}"
+  local gen_api_enable_image="${GEN_API_ENABLE_IMAGE:-true}"
+  local gen_api_tts_network="${GEN_API_TTS_NETWORK:-minimax-speech-2-8}"
+  local gen_api_tts_model="${GEN_API_TTS_MODEL:-HD}"
+  local gen_api_tts_voice_soft="${GEN_API_TTS_VOICE_SOFT:-Patient_Man}"
+  local gen_api_tts_voice_neutral="${GEN_API_TTS_VOICE_NEUTRAL:-Patient_Man}"
+  local gen_api_tts_voice_deep="${GEN_API_TTS_VOICE_DEEP:-Patient_Man}"
+  local gen_api_chat_path="${GEN_API_CHAT_PATH:-/v1/chat/completions}"
+  local gen_api_image_path="${GEN_API_IMAGE_PATH:-/v1/images/generations}"
+  local gen_api_text_model="${GEN_API_TEXT_MODEL:-gpt-4.1-mini}"
+  local gen_api_image_model="${GEN_API_IMAGE_MODEL:-flux}"
   local enable_ads="${ENABLE_ADS:-false}"
 
   local admob_app_id="${ADMOB_APP_ID:-}"
@@ -308,6 +361,15 @@ run_ai_meal_planner() {
   local firebase_ios_bundle_id="${FIREBASE_IOS_BUNDLE_ID:-}"
   local firebase_ios_storage_bucket="${FIREBASE_IOS_STORAGE_BUCKET:-}"
 
+  # If a previous run was interrupted, Flutter may leave a partially written
+  # app-debug.apk behind. That breaks `aapt dump xmltree` with:
+  #   "Invalid file" / "AndroidManifest.xml not found"
+  maybe_fix_broken_android_apk "$app_dir"
+
+  local run_log
+  run_log="$(mktemp)"
+  # Stream output to both console and file so we can detect common failures and help the user.
+  set +e
   run_flutter_in_dir "$app_dir" run \
     --dart-define=APPHUD_API_KEY="$apphud_api_key" \
     --dart-define=APPHUD_PLACEMENT_ID="$apphud_placement_id" \
@@ -338,10 +400,112 @@ run_ai_meal_planner() {
     --dart-define=FIREBASE_IOS_SENDER_ID="$firebase_ios_sender_id" \
     --dart-define=FIREBASE_IOS_BUNDLE_ID="$firebase_ios_bundle_id" \
     --dart-define=FIREBASE_IOS_STORAGE_BUCKET="$firebase_ios_storage_bucket" \
-    --dart-define=FREEPIK_API_KEY="$freepik_api_key" \
-    --dart-define=ENABLE_FREEPIK_TOOLS="$enable_freepik_tools" \
+    --dart-define=GEN_API_KEY="$gen_api_key" \
+    --dart-define=GENAPI_TOKEN="${GENAPI_TOKEN:-}" \
+    --dart-define=GEN_API_BASE_URL="$gen_api_base_url" \
+    --dart-define=GEN_API_NETWORKS_PATH="$gen_api_networks_path" \
+    --dart-define=GEN_API_REQUEST_PATH_TEMPLATE="$gen_api_request_path_template" \
+    --dart-define=GEN_API_REQUEST_ALT_PATH_TEMPLATE="$gen_api_request_alt_path_template" \
+    --dart-define=GEN_API_TEXT_NETWORK="$gen_api_text_network" \
+    --dart-define=GEN_API_ENABLE_TEXT="$gen_api_enable_text" \
+    --dart-define=GEN_API_IMAGE_NETWORK="$gen_api_image_network" \
+    --dart-define=GEN_API_ENABLE_IMAGE="$gen_api_enable_image" \
+    --dart-define=GEN_API_TTS_NETWORK="$gen_api_tts_network" \
+    --dart-define=GEN_API_TTS_MODEL="$gen_api_tts_model" \
+    --dart-define=GEN_API_TTS_VOICE_SOFT="$gen_api_tts_voice_soft" \
+    --dart-define=GEN_API_TTS_VOICE_NEUTRAL="$gen_api_tts_voice_neutral" \
+    --dart-define=GEN_API_TTS_VOICE_DEEP="$gen_api_tts_voice_deep" \
+    --dart-define=GEN_API_CHAT_PATH="$gen_api_chat_path" \
+    --dart-define=GEN_API_IMAGE_PATH="$gen_api_image_path" \
+    --dart-define=GEN_API_TEXT_MODEL="$gen_api_text_model" \
+    --dart-define=GEN_API_IMAGE_MODEL="$gen_api_image_model" \
     --dart-define=ENABLE_ADS="$enable_ads" \
-    "${extra_args[@]}"
+    "${extra_args[@]}" 2>&1 | tee "$run_log"
+  local run_exit="${PIPESTATUS[0]}"
+  set -e
+  if [[ "$run_exit" -eq 0 ]]; then
+    rm -f "$run_log" || true
+    return 0
+  fi
+
+  # One retry if the APK looks corrupted (usually caused by interrupted build).
+  if ! is_zip_magic "$(android_apk_path "$app_dir")"; then
+    echo
+    echo "-----------------------------------------"
+    echo " Flutter run failed and APK looks corrupted."
+    echo " Retrying after clean..."
+    echo "-----------------------------------------"
+    maybe_fix_broken_android_apk "$app_dir"
+    run_flutter_in_dir "$app_dir" run \
+      --dart-define=APPHUD_API_KEY="$apphud_api_key" \
+      --dart-define=APPHUD_PLACEMENT_ID="$apphud_placement_id" \
+      --dart-define=APPHUD_PAYWALL_ID="$apphud_paywall_id" \
+      --dart-define=APPHUD_PRODUCT_WEEKLY="$apphud_weekly" \
+      --dart-define=APPHUD_PRODUCT_MONTHLY="$apphud_monthly" \
+      --dart-define=APPSFLYER_DEV_KEY="$appsflyer_dev_key" \
+      --dart-define=APPSFLYER_APPLE_APP_ID="$appsflyer_apple_id" \
+      --dart-define=APPSFLYER_ATT_WAIT_SECONDS="$appsflyer_att_wait" \
+      --dart-define=APPMETRICA_API_KEY="$appmetrica_api_key" \
+      --dart-define=ENABLE_EXTERNAL_SERVICES="$enable_external_services" \
+      --dart-define=ADMOB_APP_ID="$admob_app_id" \
+      --dart-define=ADMOB_BANNER_AD_UNIT_ID="$admob_banner" \
+      --dart-define=ADMOB_INTERSTITIAL_AD_UNIT_ID="$admob_interstitial" \
+      --dart-define=ADMOB_REWARDED_AD_UNIT_ID="$admob_rewarded" \
+      --dart-define=ADMOB_REWARDED_INTERSTITIAL_AD_UNIT_ID="$admob_rewarded_interstitial" \
+      --dart-define=ADMOB_APP_OPEN_AD_UNIT_ID="$admob_app_open" \
+      --dart-define=ADMOB_NATIVE_AD_UNIT_ID="$admob_native" \
+      --dart-define=ENABLE_FIREBASE_ANALYTICS="$enable_firebase_analytics" \
+      --dart-define=FIREBASE_ANDROID_API_KEY="$firebase_android_api_key" \
+      --dart-define=FIREBASE_ANDROID_APP_ID="$firebase_android_app_id" \
+      --dart-define=FIREBASE_ANDROID_PROJECT_ID="$firebase_android_project_id" \
+      --dart-define=FIREBASE_ANDROID_SENDER_ID="$firebase_android_sender_id" \
+      --dart-define=FIREBASE_ANDROID_STORAGE_BUCKET="$firebase_android_storage_bucket" \
+      --dart-define=FIREBASE_IOS_API_KEY="$firebase_ios_api_key" \
+      --dart-define=FIREBASE_IOS_APP_ID="$firebase_ios_app_id" \
+      --dart-define=FIREBASE_IOS_PROJECT_ID="$firebase_ios_project_id" \
+      --dart-define=FIREBASE_IOS_SENDER_ID="$firebase_ios_sender_id" \
+      --dart-define=FIREBASE_IOS_BUNDLE_ID="$firebase_ios_bundle_id" \
+      --dart-define=FIREBASE_IOS_STORAGE_BUCKET="$firebase_ios_storage_bucket" \
+      --dart-define=GEN_API_KEY="$gen_api_key" \
+      --dart-define=GENAPI_TOKEN="${GENAPI_TOKEN:-}" \
+      --dart-define=GEN_API_BASE_URL="$gen_api_base_url" \
+      --dart-define=GEN_API_NETWORKS_PATH="$gen_api_networks_path" \
+      --dart-define=GEN_API_REQUEST_PATH_TEMPLATE="$gen_api_request_path_template" \
+      --dart-define=GEN_API_REQUEST_ALT_PATH_TEMPLATE="$gen_api_request_alt_path_template" \
+      --dart-define=GEN_API_TEXT_NETWORK="$gen_api_text_network" \
+      --dart-define=GEN_API_ENABLE_TEXT="$gen_api_enable_text" \
+      --dart-define=GEN_API_IMAGE_NETWORK="$gen_api_image_network" \
+      --dart-define=GEN_API_ENABLE_IMAGE="$gen_api_enable_image" \
+      --dart-define=GEN_API_TTS_NETWORK="$gen_api_tts_network" \
+      --dart-define=GEN_API_TTS_MODEL="$gen_api_tts_model" \
+      --dart-define=GEN_API_TTS_VOICE_SOFT="$gen_api_tts_voice_soft" \
+      --dart-define=GEN_API_TTS_VOICE_NEUTRAL="$gen_api_tts_voice_neutral" \
+      --dart-define=GEN_API_TTS_VOICE_DEEP="$gen_api_tts_voice_deep" \
+      --dart-define=GEN_API_CHAT_PATH="$gen_api_chat_path" \
+      --dart-define=GEN_API_IMAGE_PATH="$gen_api_image_path" \
+      --dart-define=GEN_API_TEXT_MODEL="$gen_api_text_model" \
+      --dart-define=GEN_API_IMAGE_MODEL="$gen_api_image_model" \
+      --dart-define=ENABLE_ADS="$enable_ads" \
+      "${extra_args[@]}"
+  fi
+
+  # Helpful guidance for the common WSL-on-/mnt/c symlink failure.
+  if grep -q "Building with plugins requires symlink support" "$run_log" 2>/dev/null; then
+    echo
+    echo "-----------------------------------------"
+    echo " Symlink support error detected."
+    echo
+    echo " Fix options:"
+    echo "  - Enable Windows Developer Mode:"
+    echo "      start ms-settings:developers"
+    echo "  - OR move the project to the WSL ext4 filesystem (e.g. under /home/<user>/...)"
+    echo "    and use Linux Flutter there (avoids /mnt/c symlink limitations)."
+    echo "-----------------------------------------"
+    echo
+  fi
+
+  rm -f "$run_log" || true
+  return "$run_exit"
 }
 
 main() {
@@ -350,6 +514,11 @@ main() {
   local flutter_extra_args=("$@")
   local app="$SELECTED_APP"
   local app_dir="$ROOT_DIR/$app"
+
+  # Special case: directory name differs from selector name.
+  if [[ "$app" == "ai-meditation-guide" ]]; then
+    app_dir="$ROOT_DIR/ai_meditation_guide"
+  fi
 
   if [[ ! -f "$app_dir/pubspec.yaml" ]]; then
     echo "pubspec.yaml not found in: $app_dir"
@@ -368,7 +537,7 @@ main() {
   run_flutter_in_dir "$app_dir" devices || true
 
   echo "[3/3] Running app..."
-  if [[ "$app" == "ai-meal-planner" ]]; then
+  if [[ "$app" == "ai-meal-planner" || "$app" == "ai-meditation-guide" ]]; then
     run_ai_meal_planner "$app_dir" "${flutter_extra_args[@]}"
   else
     run_flutter_in_dir "$app_dir" run "${flutter_extra_args[@]}"
