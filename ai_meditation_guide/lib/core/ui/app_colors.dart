@@ -15,11 +15,6 @@ class AppColors {
   // Акцентные цвета
   static const Color accentBlue = Color(0xFF5BA4C4);    // Голубой для "Relax & Focus"
   static const Color accentPurple = Color(0xFFB388EB);  // Фиолетовый камень
-
-  // Цвета подписок (Paywall)
-  static const Color subscriptionWeekly = Color(0xFFCBA7FF);  // Фиолетовый
-  static const Color subscriptionMonthly = Color(0xFF7ACBFF);  // Голубой
-  static const Color subscriptionYearly = Color(0xFF77C97E);   // Зелёный
   
   // UI элементы
   static const Color cardBackground = Color(0xFFFFFFFF);

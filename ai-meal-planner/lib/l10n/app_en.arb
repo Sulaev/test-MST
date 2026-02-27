@@ -73,6 +73,7 @@
   "enrichingRecipes": "Enriching meals with recipes...",
   "savingHistory": "Saving plan to history...",
   "planReady": "Your plan is ready.",
+  "freeLimitReached": "Free version limit reached: 3 plans per day. Open Profile → Subscription to unlock unlimited AI plans.",
   "generationFailed": "Generation failed: {error}",
   "@generationFailed": {
     "placeholders": {

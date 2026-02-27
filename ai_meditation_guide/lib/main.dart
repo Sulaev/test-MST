@@ -1,26 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'l10n/app_localizations.dart';
 import 'routes.dart';
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  bool envLoaded = false;
-  for (final path in ['assets/.env', '../.env', '.env']) {
-    try {
-      await dotenv.load(fileName: path);
-      envLoaded = true;
-      break;
-    } catch (_) {}
-  }
-  if (!envLoaded) {
-    try {
-      await dotenv.load();
-    } catch (_) {}
-  }
   runApp(const ProviderScope(child: AiMeditationApp()));
 }
 

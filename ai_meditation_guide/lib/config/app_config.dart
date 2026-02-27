@@ -1,38 +1,13 @@
-import 'dart:io' show Platform;
-
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-
 /// Central place for runtime configuration.
-/// Values from `--dart-define` (run_simple.sh), from .env, or from process environment.
+/// Values are injected via `--dart-define` (see `run_simple.sh`).
 class AppConfig {
   AppConfig._();
 
   /// Unified AI provider: https://gen-api.ru/docs
-  static String get genApiKey {
-    var v = String.fromEnvironment('GEN_API_KEY');
-    if (v.isNotEmpty) return v;
-    try {
-      v = dotenv.env['GEN_API_KEY'] ?? '';
-      if (v.isNotEmpty) return v;
-    } catch (_) {}
-    return Platform.environment['GEN_API_KEY'] ?? '';
-  }
-
-  static String get genApiToken {
-    var v = String.fromEnvironment('GENAPI_TOKEN');
-    if (v.isNotEmpty) return v;
-    try {
-      v = dotenv.env['GENAPI_TOKEN'] ?? '';
-      if (v.isNotEmpty) return v;
-    } catch (_) {}
-    return Platform.environment['GENAPI_TOKEN'] ?? '';
-  }
-
-  static String get genApiAuthToken {
-    final k = genApiKey;
-    if (k.isNotEmpty) return k;
-    return genApiToken;
-  }
+  static const String genApiKey = String.fromEnvironment('GEN_API_KEY');
+  static const String genApiToken = String.fromEnvironment('GENAPI_TOKEN');
+  static String get genApiAuthToken =>
+      genApiKey.isNotEmpty ? genApiKey : genApiToken;
   static const String genApiBaseUrl = String.fromEnvironment(
     'GEN_API_BASE_URL',
     defaultValue: 'https://api.gen-api.ru',

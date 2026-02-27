@@ -7,6 +7,7 @@ import 'pages/profile_page.dart';
 import 'l10n/app_localizations.dart';
 import 'package:apphud/models/apphud_models/apphud_product.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -151,7 +152,7 @@ class _MealPlannerHomePageState extends State<MealPlannerHomePage> {
   final AppsflyerService _appsflyerService = AppsflyerService();
   final AppMetricaService _appMetricaService = AppMetricaService();
   final AttService _attService = AttService();
-  final AdmobService _admobService = AdmobService();
+  late final AdmobService _admobService = AdmobService(onEvent: _logAdEvent);
   final FirebaseAnalyticsService _firebaseAnalyticsService = FirebaseAnalyticsService();
   late final PlannerGenerationService _generationService = PlannerGenerationService(
     aiService: _aiPlannerService,
@@ -188,6 +189,16 @@ class _MealPlannerHomePageState extends State<MealPlannerHomePage> {
   String _attStatus = 'notDetermined';
   int _navIndex = 0;
 
+  bool get _isPremium => _apphudState.hasActiveSubscription;
+
+  static const String _usageDateKey = 'ai_meal_planner_usage_date_v1';
+  static const String _usageAiGenerationsKey = 'ai_meal_planner_usage_ai_generations_v1';
+  static const int _freeMaxGenerationsPerDay = 3;
+  bool _usageLoaded = false;
+  int _todayGeneratedPlans = 0;
+  String _usageDate = '';
+  String? _freeLimitWarning;
+
   @override
   void initState() {
     super.initState();
@@ -211,6 +222,7 @@ class _MealPlannerHomePageState extends State<MealPlannerHomePage> {
     _appsflyerService.state.addListener(_appsflyerListener);
     _loadHistory();
     _loadFeed();
+    Future<void>.microtask(_loadUsageLimits);
     if (widget.enableExternalServices) {
       // Important: initialize external SDKs sequentially.
       // AppsFlyer conversion callbacks may fire early and forward attribution to AppHud.
@@ -237,6 +249,12 @@ class _MealPlannerHomePageState extends State<MealPlannerHomePage> {
   }
 
   Future<void> _initAds() async {
+    if (_isPremium) {
+      if (kDebugMode) {
+        debugPrint('[ExternalServices] Ads init skipped: active subscription');
+      }
+      return;
+    }
     await _admobService.initialize(_appConfig);
     await _admobService.loadBanner(_appConfig);
     await _admobService.preloadInterstitial(_appConfig);
@@ -290,6 +308,73 @@ class _MealPlannerHomePageState extends State<MealPlannerHomePage> {
     });
   }
 
+  String _todayDateString() {
+    final DateTime now = DateTime.now();
+    return '${now.year}-${_two(now.month)}-${_two(now.day)}';
+  }
+
+  Future<void> _loadUsageLimits() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String today = _todayDateString();
+    final String storedDate = prefs.getString(_usageDateKey) ?? '';
+    int count = 0;
+    if (storedDate == today) {
+      count = prefs.getInt(_usageAiGenerationsKey) ?? 0;
+    } else {
+      await prefs.setString(_usageDateKey, today);
+      await prefs.remove(_usageAiGenerationsKey);
+    }
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _usageLoaded = true;
+      _usageDate = today;
+      _todayGeneratedPlans = count;
+    });
+  }
+
+  Future<void> _incrementUsageAfterGeneration() async {
+    if (_isPremium) {
+      return;
+    }
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String today = _todayDateString();
+    String storedDate = prefs.getString(_usageDateKey) ?? '';
+    int count = 0;
+    if (storedDate == today) {
+      count = prefs.getInt(_usageAiGenerationsKey) ?? 0;
+    } else {
+      storedDate = today;
+      count = 0;
+    }
+    count += 1;
+    await prefs.setString(_usageDateKey, storedDate);
+    await prefs.setInt(_usageAiGenerationsKey, count);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _usageLoaded = true;
+      _usageDate = storedDate;
+      _todayGeneratedPlans = count;
+    });
+  }
+
+  Future<void> _ensureUsageLoaded() async {
+    if (_usageLoaded) {
+      return;
+    }
+    await _loadUsageLimits();
+  }
+
+  bool get _isFreeLimitReached {
+    if (_isPremium) {
+      return false;
+    }
+    return _todayGeneratedPlans >= _freeMaxGenerationsPerDay;
+  }
+
   Future<void> _initTracking() async {
     String statusLabel = _attStatus;
     try {
@@ -323,6 +408,28 @@ class _MealPlannerHomePageState extends State<MealPlannerHomePage> {
     );
   }
 
+  Future<void> _logAdEvent(String name, Map<String, dynamic> params) async {
+    // AppsFlyer
+    await _appsflyerService.logEvent(name, params);
+
+    // Firebase Analytics (expects Map<String, Object>)
+    final Map<String, Object> firebaseParams = <String, Object>{};
+    params.forEach((String key, dynamic value) {
+      if (value == null) {
+        return;
+      }
+      if (value is num || value is bool || value is String) {
+        firebaseParams[key] = value as Object;
+      } else {
+        firebaseParams[key] = value.toString();
+      }
+    });
+    await _firebaseAnalyticsService.logEvent(name, firebaseParams);
+
+    // AppMetrica
+    await _appMetricaService.logEvent(name, params);
+  }
+
   Future<void> _loadHistory() async {
     final List<MealPlan> items = await _historyService.getHistory();
     if (!mounted) {
@@ -345,6 +452,16 @@ class _MealPlannerHomePageState extends State<MealPlannerHomePage> {
 
   Future<void> _generate() async {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
+    await _ensureUsageLoaded();
+    if (_isFreeLimitReached) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _freeLimitWarning = l10n.freeLimitReached;
+      });
+      return;
+    }
     final int? calories = int.tryParse(_caloriesController.text.trim());
     if (calories == null || calories < 900 || calories > 5000) {
       _showError(l10n.dailyCaloriesValidationError);
@@ -352,6 +469,7 @@ class _MealPlannerHomePageState extends State<MealPlannerHomePage> {
     }
 
     setState(() {
+      _freeLimitWarning = null;
       _isGenerating = true;
       _progress = GenerationProgress(
         stage: GenerationStage.validatingInput,
@@ -437,7 +555,10 @@ class _MealPlannerHomePageState extends State<MealPlannerHomePage> {
           'mode': _mode.name,
         },
       );
-      await _admobService.showInterstitialIfAvailable(_appConfig);
+      await _incrementUsageAfterGeneration();
+      if (!_isPremium) {
+        await _admobService.showInterstitialIfAvailable(_appConfig);
+      }
       await _refreshGoalSupportTips();
     } catch (error) {
       if (!mounted) {
@@ -1092,12 +1213,23 @@ class _MealPlannerHomePageState extends State<MealPlannerHomePage> {
                 isGenerating: _isGenerating,
                 l10n: l10n,
               ),
-              const SizedBox(height: 8),
+          const SizedBox(height: 8),
               _BubbleButton(
                 onPressed: _isGenerating ? null : _generate,
                 child: Text(_isGenerating ? l10n.generating : l10n.generateMealPlan),
               ),
-              const SizedBox(height: 10),
+          if (_freeLimitWarning != null) ...<Widget>[
+            const SizedBox(height: 6),
+            Text(
+              _freeLimitWarning!,
+              style: const TextStyle(
+                color: Color(0xFFC24D5A),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
               const Divider(height: 1),
               Theme(
                 data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -1489,7 +1621,7 @@ class _MealPlannerHomePageState extends State<MealPlannerHomePage> {
                   },
                 ),
         ),
-        if (_appConfig.enableAds)
+        if (_appConfig.enableAds && !_isPremium)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Center(

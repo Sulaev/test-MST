@@ -73,6 +73,7 @@
   "enrichingRecipes": "Обогащаем блюда рецептами...",
   "savingHistory": "Сохранение плана в историю...",
   "planReady": "Ваш план готов.",
+  "freeLimitReached": "Лимит бесплатной версии: 3 плана в день. Откройте профиль → Подписка, чтобы разблокировать безлимитные планы.",
   "generationFailed": "Ошибка генерации: {error}",
   "@generationFailed": {
     "placeholders": {

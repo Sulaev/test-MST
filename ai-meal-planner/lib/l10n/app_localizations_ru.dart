@@ -149,6 +149,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get planReady => 'Ваш план готов.';
 
   @override
+  String get freeLimitReached =>
+      'Лимит бесплатной версии: 3 плана в день. Откройте профиль → Подписка, чтобы разблокировать безлимитные планы.';
+
+  @override
   String generationFailed(Object error) {
     return 'Ошибка генерации: $error';
   }

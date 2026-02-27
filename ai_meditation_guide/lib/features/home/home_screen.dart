@@ -23,7 +23,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late Future<List<SavedMeditationEntry>> _savedFuture;
-  _FooterTab _currentTab = _FooterTab.home;
 
   @override
   void initState() {
@@ -37,11 +36,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _setTab(_FooterTab tab) {
-    if (_currentTab == tab) return;
-    setState(() => _currentTab = tab);
-  }
-
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<SavedMeditationEntry>>(
@@ -49,32 +43,17 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, snapshot) {
         final saved = snapshot.data ?? const <SavedMeditationEntry>[];
         final latest = saved.isNotEmpty ? saved.first.meditation : null;
-        return _HomeView(
-          saved: saved,
-          latest: latest,
-          currentTab: _currentTab,
-          onTabChanged: _setTab,
-          onRefreshSaved: _refreshSaved,
-        );
+        return _HomeView(saved: saved, latest: latest);
       },
     );
   }
 }
 
 class _HomeView extends StatelessWidget {
-  const _HomeView({
-    required this.saved,
-    required this.latest,
-    required this.currentTab,
-    required this.onTabChanged,
-    required this.onRefreshSaved,
-  });
+  const _HomeView({required this.saved, required this.latest});
 
   final List<SavedMeditationEntry> saved;
   final GeneratedMeditation? latest;
-  final _FooterTab currentTab;
-  final ValueChanged<_FooterTab> onTabChanged;
-  final VoidCallback onRefreshSaved;
 
   static const Color _textColor = Color(0xFF111111);
 
@@ -114,43 +93,52 @@ class _HomeView extends StatelessWidget {
                 child: Stack(
                   children: [
                     const Positioned.fill(child: _FullWidthGlassSection()),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 280),
-                      switchInCurve: Curves.easeOutCubic,
-                      switchOutCurve: Curves.easeInCubic,
-                      transitionBuilder: (Widget child, Animation<double> animation) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0.03, 0),
-                              end: Offset.zero,
-                            ).animate(animation),
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: currentTab == _FooterTab.home
-                          ? _HomeTabContent(
-                              key: const ValueKey<String>('home'),
-                              dateText: dateText,
-                              saved: saved,
-                              latest: latest,
-                            )
-                          : _HistoryTabContent(
-                              key: const ValueKey<String>('history'),
-                              saved: saved,
-                              onRefresh: onRefreshSaved,
+                    SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
+                      child: Column(
+                        children: [
+                          _ActionGroup(
+                            onGenerate: () =>
+                                MeditationGeneratorSheet.show(context),
+                            onBreathing: () =>
+                                BreathingSetupSheet.show(context),
+                            onRoutine: () => showModalBottomSheet<void>(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              barrierColor: Colors.black.withOpacity(0.25),
+                              builder: (context) => const RoutineScreen(),
                             ),
+                          ),
+                          const SizedBox(height: 18),
+                          _SectionHeader(
+                            title: "Today's Meditation",
+                            trailing: dateText,
+                          ),
+                          const SizedBox(height: 12),
+                          _TodayMeditationCard(
+                            meditation: latest,
+                            onTap: latest == null
+                                ? () => context.goNamed('routine')
+                                : () => context.push('/player', extra: latest),
+                          ),
+                          const SizedBox(height: 18),
+                          const _SectionHeader(title: 'Recommended Sessions'),
+                          const SizedBox(height: 10),
+                          const _RecommendedChips(),
+                          const SizedBox(height: 12),
+                          _RecommendedList(saved: saved),
+                        ],
+                      ),
                     ),
                     Positioned(
                       left: 24,
                       right: 24,
                       bottom: 20,
                       child: _GlassFooterTabs(
-                        active: currentTab,
-                        onHome: () => onTabChanged(_FooterTab.home),
-                        onHistory: () => onTabChanged(_FooterTab.history),
+                        active: _FooterTab.home,
+                        onHome: () {},
+                        onHistory: () => context.goNamed('history'),
                       ),
                     ),
                   ],
@@ -161,235 +149,6 @@ class _HomeView extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _HomeTabContent extends StatelessWidget {
-  const _HomeTabContent({
-    super.key,
-    required this.dateText,
-    required this.saved,
-    required this.latest,
-  });
-
-  final String dateText;
-  final List<SavedMeditationEntry> saved;
-  final GeneratedMeditation? latest;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
-      child: Column(
-        children: [
-          _ActionGroup(
-            onGenerate: () => MeditationGeneratorSheet.show(context),
-            onBreathing: () => BreathingSetupSheet.show(context),
-            onRoutine: () => showModalBottomSheet<void>(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              barrierColor: Colors.black.withOpacity(0.25),
-              builder: (context) => const RoutineScreen(),
-            ),
-          ),
-          const SizedBox(height: 18),
-          _SectionHeader(
-            title: "Today's Meditation",
-            trailing: dateText,
-          ),
-          const SizedBox(height: 12),
-          _TodayMeditationCard(
-            meditation: latest,
-            onTap: () => context.pushNamed('paywall'),
-          ),
-          const SizedBox(height: 18),
-          const _SectionHeader(title: 'Recommended Sessions'),
-          const SizedBox(height: 10),
-          const _RecommendedChips(),
-          const SizedBox(height: 12),
-          _RecommendedList(saved: saved),
-        ],
-      ),
-    );
-  }
-}
-
-class _HistoryTabContent extends StatelessWidget {
-  const _HistoryTabContent({
-    super.key,
-    required this.saved,
-    required this.onRefresh,
-  });
-
-  final List<SavedMeditationEntry> saved;
-  final VoidCallback onRefresh;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 140),
-      children: [
-        if (saved.isEmpty)
-          const Padding(
-            padding: EdgeInsets.only(top: 48),
-            child: Center(
-              child: Text(
-                'No saved meditations yet.\nTap heart in player to save.',
-                textAlign: TextAlign.center,
-              ),
-            ),
-          )
-        else
-          ...saved.map((item) {
-            final meditation = item.meditation;
-            return Container(
-              height: 88,
-              margin: const EdgeInsets.symmetric(vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: InkWell(
-                      onTap: () => context.push('/player', extra: meditation),
-                      borderRadius: BorderRadius.circular(24),
-                      child: Row(
-                        children: [
-                          _HistoryItemThumb(meditation: meditation),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${meditation.durationMinutes} MINUTES',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  meditation.description.isNotEmpty
-                                      ? meditation.description
-                                      : meditation.title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF666666),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () async {
-                      await MeditationLibraryService.instance.remove(item.id);
-                      onRefresh();
-                    },
-                    icon: const Icon(Icons.delete_outline),
-                  ),
-                ],
-              ),
-            );
-          }),
-      ],
-    );
-  }
-}
-
-class _HistoryItemThumb extends StatelessWidget {
-  const _HistoryItemThumb({required this.meditation});
-
-  final dynamic meditation;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: SizedBox(
-        width: 64,
-        height: 64,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            _buildImage(),
-            Positioned(
-              left: 8,
-              bottom: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.55),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  '${meditation.durationMinutes} MIN',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildImage() {
-    final url = (meditation.coverImageUrl ?? '').toString();
-    if (url.isNotEmpty && url.startsWith('data:image')) {
-      final bytes = _decodeDataUri(url);
-      if (bytes != null) {
-        return Image.memory(bytes, fit: BoxFit.cover);
-      }
-    }
-    final asset = (meditation.coverAssetPath ?? '').toString();
-    if (asset.isNotEmpty) {
-      return Image.asset(
-        asset,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _fallback(),
-      );
-    }
-    return _fallback();
-  }
-
-  Widget _fallback() {
-    return const DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF6AA5FF), Color(0xFF84D0B5)],
-        ),
-      ),
-    );
-  }
-
-  Uint8List? _decodeDataUri(String value) {
-    final comma = value.indexOf(',');
-    if (comma < 0) return null;
-    final payload = value.substring(comma + 1).trim();
-    if (payload.isEmpty) return null;
-    try {
-      return base64Decode(payload);
-    } catch (_) {
-      return null;
-    }
   }
 }
 
@@ -862,12 +621,7 @@ class _RecommendedChipsState extends State<_RecommendedChips> {
         itemBuilder: (context, index) {
           final isActive = _selected == index;
           return GestureDetector(
-            onTap: () {
-              setState(() => _selected = index);
-              if (index == 2) {
-                context.pushNamed('paywall');
-              }
-            },
+            onTap: () => setState(() => _selected = index),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(

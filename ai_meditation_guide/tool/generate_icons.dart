@@ -18,7 +18,7 @@ void main() async {
   // Фиолетовое свечение сверху по центру (вокруг фиолетового камня)
   _drawGlow(iosIcon, 
     centerX: (size * 0.5).toInt(),
-    centerY: (size * 0.18).toInt(),
+    centerY: (size * 0.12).toInt(),
     radiusX: (size * 0.35).toInt(),
     radiusY: (size * 0.12).toInt(),
     color: img.ColorRgba8(203, 167, 255, 180), // #CBA7FF
@@ -27,19 +27,19 @@ void main() async {
   
   // Зелёное свечение СНИЗУ СЛЕВА от камней
   _drawGlow(iosIcon, 
-    centerX: (size * 0.28).toInt(),  // Слева
-    centerY: (size * 0.72).toInt(),  // Снизу
+    centerX: (size * 0.25).toInt(),  // Слева
+    centerY: (size * 0.78).toInt(),  // Снизу
     radiusX: (size * 0.35).toInt(),
     radiusY: (size * 0.18).toInt(),
     color: img.ColorRgba8(119, 201, 126, 180), // #77C97E
     blur: 180,
   );
   
-  // Камни крупнее и ближе к центру (фокус на камнях)
-  final scaledSize = (size * 0.98).toInt();
+  // Накладываем камни со смещением вниз
+  final scaledSize = (size * 0.85).toInt();
   final scaled = img.copyResize(sourceImage, width: scaledSize, height: scaledSize);
   final x = (size - scaledSize) ~/ 2;
-  final y = ((size - scaledSize) ~/ 2) + (size * 0.04).toInt();
+  final y = ((size - scaledSize) ~/ 2) + (size * 0.12).toInt();
   img.compositeImage(iosIcon, scaled, dstX: x, dstY: y);
   
   await File('assets/icon_ios.png').writeAsBytes(img.encodePng(iosIcon));
@@ -52,7 +52,7 @@ void main() async {
   // Фиолетовое свечение сверху
   _drawGlow(foreground, 
     centerX: (size * 0.5).toInt(),
-    centerY: (size * 0.18).toInt(),
+    centerY: (size * 0.12).toInt(),
     radiusX: (size * 0.30).toInt(),
     radiusY: (size * 0.10).toInt(),
     color: img.ColorRgba8(203, 167, 255, 140),
@@ -61,8 +61,8 @@ void main() async {
   
   // Зелёное свечение снизу слева
   _drawGlow(foreground, 
-    centerX: (size * 0.28).toInt(),
-    centerY: (size * 0.70).toInt(),
+    centerX: (size * 0.25).toInt(),
+    centerY: (size * 0.75).toInt(),
     radiusX: (size * 0.30).toInt(),
     radiusY: (size * 0.15).toInt(),
     color: img.ColorRgba8(119, 201, 126, 140),

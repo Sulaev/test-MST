@@ -359,6 +359,12 @@ abstract class AppLocalizations {
   /// **'Your plan is ready.'**
   String get planReady;
 
+  /// No description provided for @freeLimitReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Free version limit reached: 3 plans per day. Open Profile → Subscription to unlock unlimited AI plans.'**
+  String get freeLimitReached;
+
   /// No description provided for @generationFailed.
   ///
   /// In en, this message translates to:

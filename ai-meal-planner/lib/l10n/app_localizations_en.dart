@@ -149,6 +149,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planReady => 'Your plan is ready.';
 
   @override
+  String get freeLimitReached =>
+      'Free version limit reached: 3 plans per day. Open Profile → Subscription to unlock unlimited AI plans.';
+
+  @override
   String generationFailed(Object error) {
     return 'Generation failed: $error';
   }
