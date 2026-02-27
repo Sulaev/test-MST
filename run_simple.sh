@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Запуск приложения с .env и --dart-define (AppHud, GenAPI, AdMob и т.д.).
+# Терминал: ./run_simple.sh [ai-meditation-guide|ai-meal-planner|...]
+# IDE: Terminal → Run Task → "Run ai-meditation-guide (run_simple.sh)"
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -8,18 +11,26 @@ load_env_file() {
   if [[ ! -f "$env_file" ]]; then
     return 0
   fi
-  set -a
-  # Support UTF-8 BOM and CRLF line endings (common on Windows).
-  # shellcheck disable=SC1090
-  . <(
-    sed -e $'1s/^\xEF\xBB\xBF//' -e 's/\r$//' "$env_file" \
-      | sed -E \
-          -e 's/^[[:space:]]*export[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*=/export \1=/' \
-          -e 's/^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*=/\1=/' \
-          -e 's/^[[:space:]]+//' \
-          -e 's/[[:space:]]+$//'
-  )
-  set +a
+  local line key value
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line//$'\r'/}"
+    line="${line#$'\xEF\xBB\xBF'}"
+    [[ "$line" =~ ^[[:space:]]*# ]] && continue
+    [[ "$line" =~ ^[[:space:]]*$ ]] && continue
+    if [[ "$line" =~ ^[[:space:]]*export[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
+      key="${BASH_REMATCH[1]}"
+      value="${BASH_REMATCH[2]}"
+      printf -v "$key" '%s' "$value"
+      export "$key"
+      continue
+    fi
+    if [[ "$line" =~ ^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
+      key="${BASH_REMATCH[1]}"
+      value="${BASH_REMATCH[2]}"
+      printf -v "$key" '%s' "$value"
+      export "$key"
+    fi
+  done < "$env_file"
 }
 
 DEBUG_ENV="${DEBUG_ENV:-false}"
@@ -537,6 +548,12 @@ main() {
 
   echo "[2/3] Checking devices..."
   run_flutter_in_dir "$app_dir" devices || true
+
+  # Copy root .env into app assets so dotenv can load GENAPI_TOKEN etc. at runtime (e.g. on simulator).
+  if [[ "$app" == "ai-meal-planner" || "$app" == "ai-meditation-guide" ]] && [[ -f "$ROOT_DIR/.env" ]]; then
+    mkdir -p "$app_dir/assets"
+    cp "$ROOT_DIR/.env" "$app_dir/assets/.env"
+  fi
 
   echo "[3/3] Running app..."
   if [[ "$app" == "ai-meal-planner" || "$app" == "ai-meditation-guide" ]]; then
