@@ -422,8 +422,7 @@ run_ai_meal_planner() {
     --dart-define=GEN_API_TEXT_MODEL="$gen_api_text_model" \
     --dart-define=GEN_API_IMAGE_MODEL="$gen_api_image_model" \
     --dart-define=ENABLE_ADS="$enable_ads" \
-<<<<<<< HEAD
-    "${extra_args[@]}" 2>&1 | tee "$run_log"
+    ${_run_extra_args[@]+"${_run_extra_args[@]}"} 2>&1 | tee "$run_log"
   local run_exit="${PIPESTATUS[0]}"
   set -e
   if [[ "$run_exit" -eq 0 ]]; then
@@ -489,7 +488,7 @@ run_ai_meal_planner() {
       --dart-define=GEN_API_TEXT_MODEL="$gen_api_text_model" \
       --dart-define=GEN_API_IMAGE_MODEL="$gen_api_image_model" \
       --dart-define=ENABLE_ADS="$enable_ads" \
-      "${extra_args[@]}"
+      ${_run_extra_args[@]+"${_run_extra_args[@]}"}
   fi
 
   # Helpful guidance for the common WSL-on-/mnt/c symlink failure.
@@ -509,9 +508,6 @@ run_ai_meal_planner() {
 
   rm -f "$run_log" || true
   return "$run_exit"
-=======
-    ${_run_extra_args[@]+"${_run_extra_args[@]}"}
->>>>>>> 4304633d3f4450f40982fff1f8fb10653988b9e9
 }
 
 main() {
@@ -543,13 +539,8 @@ main() {
   run_flutter_in_dir "$app_dir" devices || true
 
   echo "[3/3] Running app..."
-<<<<<<< HEAD
   if [[ "$app" == "ai-meal-planner" || "$app" == "ai-meditation-guide" ]]; then
-    run_ai_meal_planner "$app_dir" "${flutter_extra_args[@]}"
-=======
-  if [[ "$app" == "ai-meal-planner" ]]; then
     run_ai_meal_planner "$app_dir" ${flutter_extra_args[@]+"${flutter_extra_args[@]}"}
->>>>>>> 4304633d3f4450f40982fff1f8fb10653988b9e9
   else
     run_flutter_in_dir "$app_dir" run ${flutter_extra_args[@]+"${flutter_extra_args[@]}"}
   fi
